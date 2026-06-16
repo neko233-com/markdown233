@@ -2,7 +2,7 @@ import { Marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js';
 import { open, save } from '@tauri-apps/plugin-dialog';
-import { readTextFile, writeTextFile, exists } from '@tauri-apps/plugin-fs';
+import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 
 // Initialize marked with syntax highlighting
 const marked = new Marked(
@@ -233,7 +233,7 @@ function insertLine(prefix: string) {
 // Divider drag
 let isDragging = false;
 
-divider.addEventListener('mousedown', (e) => {
+divider.addEventListener('mousedown', () => {
   isDragging = true;
   divider.classList.add('active');
   document.body.style.cursor = 'col-resize';
