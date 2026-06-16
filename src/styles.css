@@ -1,0 +1,403 @@
+/* CSS Variables for theming */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f7f7f7;
+  --bg-toolbar: #ffffff;
+  --bg-statusbar: #f0f0f0;
+  --text-primary: #24292e;
+  --text-secondary: #586069;
+  --text-muted: #959da5;
+  --border-color: #e1e4e8;
+  --accent-color: #0366d6;
+  --hover-bg: #f3f4f6;
+  --active-bg: #e8eaed;
+  --scrollbar-thumb: #c1c1c1;
+  --scrollbar-track: #f1f1f1;
+  --code-bg: #f6f8fa;
+  --blockquote-border: #dfe2e5;
+  --shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+[data-theme="dark"] {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --bg-toolbar: #2d2d2d;
+  --bg-statusbar: #007acc;
+  --text-primary: #d4d4d4;
+  --text-secondary: #a0a0a0;
+  --text-muted: #6e6e6e;
+  --border-color: #3e3e3e;
+  --accent-color: #569cd6;
+  --hover-bg: #3e3e3e;
+  --active-bg: #4e4e4e;
+  --scrollbar-thumb: #4e4e4e;
+  --scrollbar-track: #1e1e1e;
+  --code-bg: #2d2d2d;
+  --blockquote-border: #4e4e4e;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* Reset & Base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-color);
+  gap: 8px;
+  min-height: 44px;
+  -webkit-app-region: drag;
+}
+
+.toolbar-left, .toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  -webkit-app-region: no-drag;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toolbar-btn:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.toolbar-btn:active {
+  background: var(--active-bg);
+}
+
+.toolbar-separator {
+  width: 1px;
+  height: 20px;
+  background: var(--border-color);
+  margin: 0 4px;
+}
+
+/* Editor Container */
+.editor-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Editor Panel */
+.editor-panel {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+#editor {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  padding: 24px 32px;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  tab-size: 4;
+  overflow-y: auto;
+}
+
+#editor::placeholder {
+  color: var(--text-muted);
+}
+
+/* Divider */
+.divider {
+  width: 1px;
+  background: var(--border-color);
+  cursor: col-resize;
+  transition: background 0.15s ease;
+}
+
+.divider:hover, .divider.active {
+  background: var(--accent-color);
+  width: 3px;
+}
+
+/* Preview Panel */
+.preview-panel {
+  flex: 1;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.preview-content {
+  height: 100%;
+  padding: 24px 40px;
+  overflow-y: auto;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Preview Typography */
+.preview-content h1 {
+  font-size: 2em;
+  font-weight: 700;
+  margin: 0.8em 0 0.5em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.preview-content h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  margin: 0.8em 0 0.4em;
+  padding-bottom: 0.2em;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.preview-content h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin: 0.8em 0 0.4em;
+  color: var(--text-primary);
+}
+
+.preview-content h4, .preview-content h5, .preview-content h6 {
+  font-weight: 600;
+  margin: 0.8em 0 0.4em;
+  color: var(--text-primary);
+}
+
+.preview-content p {
+  margin: 0.8em 0;
+  line-height: 1.8;
+}
+
+.preview-content a {
+  color: var(--accent-color);
+  text-decoration: none;
+}
+
+.preview-content a:hover {
+  text-decoration: underline;
+}
+
+.preview-content strong {
+  font-weight: 600;
+}
+
+.preview-content em {
+  font-style: italic;
+}
+
+.preview-content del {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.preview-content code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+  font-size: 0.9em;
+  padding: 0.2em 0.4em;
+  background: var(--code-bg);
+  border-radius: 4px;
+  color: #e83e8c;
+}
+
+.preview-content pre {
+  margin: 1em 0;
+  padding: 16px;
+  background: var(--code-bg);
+  border-radius: 8px;
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+}
+
+.preview-content pre code {
+  padding: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.preview-content blockquote {
+  margin: 1em 0;
+  padding: 0.5em 1em;
+  border-left: 4px solid var(--accent-color);
+  background: var(--bg-secondary);
+  border-radius: 0 4px 4px 0;
+  color: var(--text-secondary);
+}
+
+.preview-content blockquote p {
+  margin: 0.4em 0;
+}
+
+.preview-content ul, .preview-content ol {
+  margin: 0.8em 0;
+  padding-left: 2em;
+}
+
+.preview-content li {
+  margin: 0.3em 0;
+  line-height: 1.8;
+}
+
+.preview-content ul li {
+  list-style-type: disc;
+}
+
+.preview-content ol li {
+  list-style-type: decimal;
+}
+
+.preview-content hr {
+  margin: 1.5em 0;
+  border: none;
+  border-top: 1px solid var(--border-color);
+}
+
+.preview-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+}
+
+.preview-content th, .preview-content td {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.preview-content th {
+  background: var(--bg-secondary);
+  font-weight: 600;
+}
+
+.preview-content tr:nth-child(even) {
+  background: var(--bg-secondary);
+}
+
+.preview-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 0.5em 0;
+}
+
+.preview-content input[type="checkbox"] {
+  margin-right: 6px;
+}
+
+/* Status Bar */
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  background: var(--bg-statusbar);
+  border-top: 1px solid var(--border-color);
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-height: 24px;
+}
+
+[data-theme="dark"] .status-bar {
+  background: var(--accent-color);
+  color: #ffffff;
+}
+
+.status-left, .status-center, .status-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-right span {
+  white-space: nowrap;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* View Modes */
+.editor-container.editor-only .preview-panel,
+.editor-container.editor-only .divider {
+  display: none;
+}
+
+.editor-container.preview-only .editor-panel,
+.editor-container.preview-only .divider {
+  display: none;
+}
+
+/* Focus Mode */
+.editor-panel.focused #editor {
+  background: linear-gradient(to right, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.preview-content {
+  animation: fadeIn 0.2s ease;
+}
