@@ -1626,6 +1626,60 @@ button.tag-chip:hover {
   background: var(--bg-hover);
 }
 
+.find-panel {
+  position: fixed;
+  top: calc(var(--titlebar-height) + var(--menubar-height) + 10px);
+  right: calc(var(--inspector-width) + 18px);
+  z-index: 2400;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--glass-strong);
+  box-shadow: var(--shadow-base);
+}
+
+.find-panel input {
+  width: 170px;
+  height: 30px;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  padding: 0 9px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  outline: none;
+  font-size: 13px;
+}
+
+.find-panel input:focus {
+  border-color: var(--color-primary);
+}
+
+.find-panel button {
+  min-width: 30px;
+  height: 30px;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.find-panel button:hover {
+  background: var(--bg-hover);
+  color: var(--color-primary);
+}
+
+.find-count {
+  min-width: 46px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-align: center;
+}
+
 .search-result strong {
   font-size: 14px;
 }

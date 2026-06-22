@@ -248,15 +248,27 @@
         <div class="editor-context-menu hidden" id="editorContextMenu" role="menu">
           <button type="button" data-editor-action="bold" role="menuitem"><span data-i18n="formatBold">加粗</span><kbd>⌘B</kbd></button>
           <button type="button" data-editor-action="italic" role="menuitem"><span data-i18n="formatItalic">斜体</span><kbd>⌘I</kbd></button>
+          <button type="button" data-editor-action="strike" role="menuitem"><span data-i18n="formatStrike">删除线</span><kbd>⌘⇧X</kbd></button>
           <button type="button" data-editor-action="inlineCode" role="menuitem"><span data-i18n="formatInlineCode">行内代码</span><kbd>⌘E</kbd></button>
           <div class="context-separator"></div>
+          <button type="button" data-editor-action="heading1" role="menuitem"><span data-i18n="insertHeading1">一级标题</span><kbd>⌥1</kbd></button>
           <button type="button" data-editor-action="heading2" role="menuitem"><span data-i18n="insertHeading">标题</span><kbd>⌥2</kbd></button>
+          <button type="button" data-editor-action="heading3" role="menuitem"><span data-i18n="insertHeading3">三级标题</span><kbd>⌥3</kbd></button>
           <button type="button" data-editor-action="quote" role="menuitem"><span data-i18n="insertQuote">引用</span><kbd>⌥Q</kbd></button>
           <button type="button" data-editor-action="bulletList" role="menuitem"><span data-i18n="insertBulletList">无序列表</span><kbd>⌘⇧8</kbd></button>
           <button type="button" data-editor-action="orderedList" role="menuitem"><span data-i18n="insertOrderedList">有序列表</span><kbd>⌘⇧7</kbd></button>
+          <button type="button" data-editor-action="taskList" role="menuitem"><span data-i18n="insertTaskList">任务列表</span><kbd>⌘⇧9</kbd></button>
           <div class="context-separator"></div>
+          <button type="button" data-editor-action="link" role="menuitem"><span data-i18n="insertLink">链接</span><kbd>⌘L</kbd></button>
+          <button type="button" data-editor-action="image" role="menuitem"><span data-i18n="insertImage">图片</span><kbd>⌘⌥I</kbd></button>
           <button type="button" data-editor-action="table" role="menuitem"><span data-i18n="insertTable">插入表格</span><kbd>⌘⌥T</kbd></button>
+          <button type="button" data-editor-action="tableRow" role="menuitem"><span data-i18n="tableAddRow">添加表格行</span></button>
+          <button type="button" data-editor-action="tableColumn" role="menuitem"><span data-i18n="tableAddColumn">添加表格列</span></button>
           <button type="button" data-editor-action="codeBlock" role="menuitem"><span data-i18n="insertCodeBlock">代码块</span><kbd>⌘⌥C</kbd></button>
+          <button type="button" data-editor-action="mathBlock" role="menuitem"><span data-i18n="insertMathBlock">数学公式</span><kbd>⌘⌥M</kbd></button>
+          <button type="button" data-editor-action="footnote" role="menuitem"><span data-i18n="insertFootnote">脚注</span></button>
+          <button type="button" data-editor-action="horizontalRule" role="menuitem"><span data-i18n="insertHorizontalRule">分割线</span></button>
+          <button type="button" data-editor-action="toc" role="menuitem"><span data-i18n="insertToc">目录</span></button>
         </div>
 
         <aside class="inspector" id="inspector">
@@ -374,6 +386,17 @@
           <input id="globalSearchInput" class="command-search" type="search" autocomplete="off" data-i18n-placeholder="globalSearchPlaceholder" placeholder="搜索标题、正文、标签...">
           <div class="search-results" id="globalSearchResults"></div>
         </div>
+      </div>
+
+      <div class="find-panel hidden" id="findPanel" role="dialog" aria-modal="false">
+        <input id="findInput" type="search" autocomplete="off" data-i18n-placeholder="findPlaceholder" placeholder="查找">
+        <input id="replaceInput" type="text" autocomplete="off" data-i18n-placeholder="replacePlaceholder" placeholder="替换">
+        <span id="findCount" class="find-count">0 / 0</span>
+        <button id="btnFindPrev" title="上一个" data-i18n-title="findPrevious">↑</button>
+        <button id="btnFindNext" title="下一个" data-i18n-title="findNext">↓</button>
+        <button id="btnReplaceOne" data-i18n="replaceOne">替换</button>
+        <button id="btnReplaceAll" data-i18n="replaceAll">全部</button>
+        <button id="btnCloseFind" data-i18n-title="close" title="关闭">×</button>
       </div>
 
       <div class="welcome-screen" id="welcomeScreen">

@@ -147,6 +147,12 @@ interface AppCommand {
   run: () => void | Promise<void>;
 }
 
+interface FindState {
+  query: string;
+  matches: number[];
+  index: number;
+}
+
 interface PluginPanel {
   id: string;
   title: string;
@@ -227,12 +233,15 @@ interface AppState {
   vaultConfig: VaultConfig | null;
   pluginManifests: PluginInstall[];
   unresolvedLinks: string[];
+  find: FindState;
   editor: Editor | null;
 }
 
 const DEFAULT_SHORTCUTS: Record<string, string> = {
   'app.commandPalette': 'Mod+K',
   'search.global': 'Mod+P',
+  'search.find': 'Mod+F',
+  'search.replace': 'Mod+Alt+F',
   'file.new': 'Mod+N',
   'file.open': 'Mod+O',
   'folder.open': 'Mod+Shift+O',
@@ -243,12 +252,22 @@ const DEFAULT_SHORTCUTS: Record<string, string> = {
   'edit.bold': 'Mod+B',
   'edit.italic': 'Mod+I',
   'edit.inlineCode': 'Mod+E',
+  'edit.strike': 'Mod+Shift+X',
   'edit.bulletList': 'Mod+Shift+8',
   'edit.orderedList': 'Mod+Shift+7',
+  'edit.taskList': 'Mod+Shift+9',
+  'edit.heading1': 'Alt+1',
   'edit.heading2': 'Alt+2',
+  'edit.heading3': 'Alt+3',
+  'edit.heading4': 'Alt+4',
+  'edit.heading5': 'Alt+5',
+  'edit.heading6': 'Alt+6',
   'edit.quote': 'Alt+Q',
+  'edit.link': 'Mod+L',
+  'edit.image': 'Mod+Alt+I',
   'edit.table': 'Mod+Alt+T',
   'edit.codeBlock': 'Mod+Alt+C',
+  'edit.mathBlock': 'Mod+Alt+M',
 };
 
 const state: AppState = {
@@ -290,6 +309,11 @@ const state: AppState = {
   vaultConfig: null,
   pluginManifests: [],
   unresolvedLinks: [],
+  find: {
+    query: '',
+    matches: [],
+    index: -1,
+  },
   editor: null,
 };
 
@@ -329,6 +353,12 @@ const graphFilterEl = document.getElementById('graphFilter') as HTMLInputElement
 const searchPaletteEl = document.getElementById('searchPalette')!;
 const globalSearchInputEl = document.getElementById('globalSearchInput') as HTMLInputElement;
 const globalSearchResultsEl = document.getElementById('globalSearchResults')!;
+const findPanelEl = document.getElementById('findPanel')!;
+const findInputEl = document.getElementById('findInput') as HTMLInputElement;
+const replaceInputEl = document.getElementById('replaceInput') as HTMLInputElement;
+const findCountEl = document.getElementById('findCount')!;
+const btnReplaceOneEl = document.getElementById('btnReplaceOne')!;
+const btnReplaceAllEl = document.getElementById('btnReplaceAll')!;
 const welcomeScreenEl = document.getElementById('welcomeScreen')!;
 const modalSettingsEl = document.getElementById('modalSettings') as HTMLDialogElement;
 const settingsLanguageSelectEl = document.getElementById('settingsLanguageSelect') as HTMLSelectElement;
@@ -585,6 +615,8 @@ function initCommandRegistry() {
   registerCommand({ id: 'settings.open', title: () => t('settings'), group: () => t('commandGroupApp'), run: openSettings });
   registerCommand({ id: 'diagnostics.export', title: () => t('exportDiagnostics'), group: () => t('commandGroupApp'), run: exportDiagnostics });
   registerCommand({ id: 'search.global', title: () => t('globalSearch'), group: () => t('commandGroupSearch'), run: openGlobalSearch });
+  registerCommand({ id: 'search.find', title: () => t('find'), group: () => t('commandGroupSearch'), run: () => openFindPanel(false) });
+  registerCommand({ id: 'search.replace', title: () => t('replace'), group: () => t('commandGroupSearch'), run: () => openFindPanel(true) });
   registerCommand({ id: 'file.new', title: () => t('newFile'), group: () => t('commandGroupFile'), run: newFile });
   registerCommand({ id: 'file.open', title: () => t('openFile'), group: () => t('commandGroupFile'), run: () => document.getElementById('btnOpenFile')?.click() });
   registerCommand({ id: 'folder.open', title: () => t('openFolder'), group: () => t('commandGroupFile'), run: openFolder });
@@ -595,13 +627,29 @@ function initCommandRegistry() {
   registerCommand({ id: 'file.printPdf', title: () => t('printPdf'), group: () => t('commandGroupExport'), run: printPdf });
   registerCommand({ id: 'edit.bold', title: () => t('formatBold'), group: () => t('commandGroupEdit'), run: () => runEditorAction('bold') });
   registerCommand({ id: 'edit.italic', title: () => t('formatItalic'), group: () => t('commandGroupEdit'), run: () => runEditorAction('italic') });
+  registerCommand({ id: 'edit.strike', title: () => t('formatStrike'), group: () => t('commandGroupEdit'), run: () => runEditorAction('strike') });
   registerCommand({ id: 'edit.inlineCode', title: () => t('formatInlineCode'), group: () => t('commandGroupEdit'), run: () => runEditorAction('inlineCode') });
+  registerCommand({ id: 'edit.heading1', title: () => t('insertHeading1'), group: () => t('commandGroupEdit'), run: () => runEditorAction('heading1') });
   registerCommand({ id: 'edit.heading2', title: () => t('insertHeading'), group: () => t('commandGroupEdit'), run: () => runEditorAction('heading2') });
+  registerCommand({ id: 'edit.heading3', title: () => t('insertHeading3'), group: () => t('commandGroupEdit'), run: () => runEditorAction('heading3') });
+  registerCommand({ id: 'edit.heading4', title: () => t('insertHeading4'), group: () => t('commandGroupEdit'), run: () => runEditorAction('heading4') });
+  registerCommand({ id: 'edit.heading5', title: () => t('insertHeading5'), group: () => t('commandGroupEdit'), run: () => runEditorAction('heading5') });
+  registerCommand({ id: 'edit.heading6', title: () => t('insertHeading6'), group: () => t('commandGroupEdit'), run: () => runEditorAction('heading6') });
   registerCommand({ id: 'edit.quote', title: () => t('insertQuote'), group: () => t('commandGroupEdit'), run: () => runEditorAction('quote') });
   registerCommand({ id: 'edit.bulletList', title: () => t('insertBulletList'), group: () => t('commandGroupEdit'), run: () => runEditorAction('bulletList') });
   registerCommand({ id: 'edit.orderedList', title: () => t('insertOrderedList'), group: () => t('commandGroupEdit'), run: () => runEditorAction('orderedList') });
+  registerCommand({ id: 'edit.taskList', title: () => t('insertTaskList'), group: () => t('commandGroupEdit'), run: () => runEditorAction('taskList') });
+  registerCommand({ id: 'edit.link', title: () => t('insertLink'), group: () => t('commandGroupEdit'), run: () => runEditorAction('link') });
+  registerCommand({ id: 'edit.image', title: () => t('insertImage'), group: () => t('commandGroupEdit'), run: () => runEditorAction('image') });
   registerCommand({ id: 'edit.table', title: () => t('insertTable'), group: () => t('commandGroupEdit'), run: () => runEditorAction('table') });
+  registerCommand({ id: 'edit.tableRow', title: () => t('tableAddRow'), group: () => t('commandGroupEdit'), run: () => runEditorAction('tableRow') });
+  registerCommand({ id: 'edit.tableColumn', title: () => t('tableAddColumn'), group: () => t('commandGroupEdit'), run: () => runEditorAction('tableColumn') });
   registerCommand({ id: 'edit.codeBlock', title: () => t('insertCodeBlock'), group: () => t('commandGroupEdit'), run: () => runEditorAction('codeBlock') });
+  registerCommand({ id: 'edit.mathBlock', title: () => t('insertMathBlock'), group: () => t('commandGroupEdit'), run: () => runEditorAction('mathBlock') });
+  registerCommand({ id: 'edit.footnote', title: () => t('insertFootnote'), group: () => t('commandGroupEdit'), run: () => runEditorAction('footnote') });
+  registerCommand({ id: 'edit.horizontalRule', title: () => t('insertHorizontalRule'), group: () => t('commandGroupEdit'), run: () => runEditorAction('horizontalRule') });
+  registerCommand({ id: 'edit.toc', title: () => t('insertToc'), group: () => t('commandGroupEdit'), run: () => runEditorAction('toc') });
+  registerCommand({ id: 'edit.frontmatter', title: () => t('insertFrontmatter'), group: () => t('commandGroupEdit'), run: () => runEditorAction('frontmatter') });
   registerCommand({ id: 'view.source', title: () => t('sourceMode'), group: () => t('commandGroupView'), run: toggleSourceMode });
   registerCommand({ id: 'view.sidebar', title: () => t('toggleSidebar'), group: () => t('commandGroupView'), run: () => { sidebarEl.classList.toggle('collapsed'); } });
   registerCommand({ id: 'view.inspector', title: () => t('toggleInspector'), group: () => t('commandGroupView'), run: () => { document.getElementById('inspector')?.classList.toggle('collapsed'); } });
@@ -756,6 +804,138 @@ function closeGlobalSearch() {
   searchPaletteEl.classList.add('hidden');
 }
 
+function openFindPanel(showReplace = false) {
+  findPanelEl.classList.remove('hidden');
+  replaceInputEl.classList.toggle('hidden', !showReplace);
+  btnReplaceOneEl.classList.toggle('hidden', !showReplace);
+  btnReplaceAllEl.classList.toggle('hidden', !showReplace);
+  requestAnimationFrame(() => {
+    findInputEl.focus();
+    findInputEl.select();
+    updateFindMatches();
+  });
+}
+
+function closeFindPanel() {
+  findPanelEl.classList.add('hidden');
+  clearEditorFindSelection();
+}
+
+function updateFindMatches(resetIndex = true) {
+  const query = findInputEl.value;
+  state.find.query = query;
+  state.find.matches = [];
+
+  if (query) {
+    const lowerContent = state.content.toLowerCase();
+    const lowerQuery = query.toLowerCase();
+    let index = lowerContent.indexOf(lowerQuery);
+    while (index >= 0) {
+      state.find.matches.push(index);
+      index = lowerContent.indexOf(lowerQuery, index + Math.max(lowerQuery.length, 1));
+    }
+  }
+
+  if (resetIndex) {
+    state.find.index = state.find.matches.length ? 0 : -1;
+  } else if (state.find.index >= state.find.matches.length) {
+    state.find.index = state.find.matches.length - 1;
+  }
+
+  updateFindCount();
+  revealFindMatch();
+}
+
+function updateFindCount() {
+  const total = state.find.matches.length;
+  findCountEl.textContent = total ? `${state.find.index + 1} / ${total}` : '0 / 0';
+}
+
+function moveFind(delta: number) {
+  if (!state.find.matches.length) return;
+  state.find.index = (state.find.index + delta + state.find.matches.length) % state.find.matches.length;
+  updateFindCount();
+  revealFindMatch();
+}
+
+function revealFindMatch() {
+  const query = state.find.query;
+  const index = state.find.matches[state.find.index];
+  if (!query || index === undefined) return;
+
+  if (state.isSourceMode) {
+    sourceEditorEl.focus();
+    sourceEditorEl.selectionStart = index;
+    sourceEditorEl.selectionEnd = index + query.length;
+    const line = state.content.slice(0, index).split(/\r?\n/).length;
+    const lineHeight = parseFloat(getComputedStyle(sourceEditorEl).lineHeight) || 24;
+    sourceEditorEl.scrollTop = Math.max(0, (line - 3) * lineHeight);
+    return;
+  }
+
+  selectTextInRenderedEditor(query, state.find.index);
+}
+
+function selectTextInRenderedEditor(query: string, occurrence: number) {
+  const walker = document.createTreeWalker(editorEl, NodeFilter.SHOW_TEXT);
+  let seen = 0;
+  let node = walker.nextNode() as Text | null;
+  while (node) {
+    const text = node.textContent || '';
+    let offset = text.toLowerCase().indexOf(query.toLowerCase());
+    while (offset >= 0) {
+      if (seen === occurrence) {
+        const range = document.createRange();
+        range.setStart(node, offset);
+        range.setEnd(node, offset + query.length);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        (range.startContainer.parentElement || editorEl).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      seen += 1;
+      offset = text.toLowerCase().indexOf(query.toLowerCase(), offset + query.length);
+    }
+    node = walker.nextNode() as Text | null;
+  }
+}
+
+function clearEditorFindSelection() {
+  if (!state.isSourceMode) {
+    window.getSelection()?.removeAllRanges();
+  }
+}
+
+async function replaceCurrentMatch() {
+  if (!state.find.matches.length || state.find.index < 0) return;
+  const index = state.find.matches[state.find.index];
+  const query = state.find.query;
+  const replacement = replaceInputEl.value;
+  state.content = `${state.content.slice(0, index)}${replacement}${state.content.slice(index + query.length)}`;
+  await syncEditorContentAfterReplace();
+  updateFindMatches(false);
+}
+
+async function replaceAllMatches() {
+  if (!findInputEl.value) return;
+  const escaped = findInputEl.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  state.content = state.content.replace(new RegExp(escaped, 'gi'), replaceInputEl.value);
+  await syncEditorContentAfterReplace();
+  updateFindMatches();
+}
+
+async function syncEditorContentAfterReplace() {
+  state.modified = true;
+  if (state.isSourceMode) {
+    sourceEditorEl.value = state.content;
+  } else {
+    await reloadEditor(state.content);
+  }
+  updateStatusBar();
+  updateKnowledgeState();
+}
+
 function renderGlobalSearch() {
   const query = globalSearchInputEl.value.trim().toLowerCase();
   const notes = [...state.vaultNotes];
@@ -870,12 +1050,28 @@ function insertMarkdown(markdown: string) {
 type EditorAction =
   | 'bold'
   | 'italic'
+  | 'strike'
   | 'inlineCode'
+  | 'heading1'
   | 'heading2'
+  | 'heading3'
+  | 'heading4'
+  | 'heading5'
+  | 'heading6'
   | 'quote'
   | 'bulletList'
   | 'orderedList'
+  | 'taskList'
+  | 'link'
+  | 'image'
   | 'table'
+  | 'tableRow'
+  | 'tableColumn'
+  | 'mathBlock'
+  | 'footnote'
+  | 'horizontalRule'
+  | 'toc'
+  | 'frontmatter'
   | 'codeBlock';
 
 function selectedEditorText() {
@@ -915,6 +1111,12 @@ async function applyEditorInsertion(value: string, selectedText = '') {
 async function runEditorAction(action: EditorAction) {
   hideEditorContextMenu();
   welcomeScreenEl.classList.add('hidden');
+
+  if (action === 'tableRow' || action === 'tableColumn') {
+    await mutateFirstMarkdownTable(action);
+    return;
+  }
+
   const selection = selectedEditorText();
   const fallback = t('selectedTextPlaceholder');
   const text = selection || fallback;
@@ -922,16 +1124,89 @@ async function runEditorAction(action: EditorAction) {
   const snippets: Record<EditorAction, string> = {
     bold: `**${text}**`,
     italic: `*${text}*`,
+    strike: `~~${text}~~`,
     inlineCode: `\`${selection || 'code'}\``,
+    heading1: `# ${selection || t('headingPlaceholder')}`,
     heading2: `## ${selection || t('headingPlaceholder')}`,
+    heading3: `### ${selection || t('headingPlaceholder')}`,
+    heading4: `#### ${selection || t('headingPlaceholder')}`,
+    heading5: `##### ${selection || t('headingPlaceholder')}`,
+    heading6: `###### ${selection || t('headingPlaceholder')}`,
     quote: `> ${selection || t('quotePlaceholder')}`,
     bulletList: `- ${selection || t('listItemPlaceholder')}`,
     orderedList: `1. ${selection || t('listItemPlaceholder')}`,
+    taskList: `- [ ] ${selection || t('listItemPlaceholder')}`,
+    link: `[${selection || t('linkTextPlaceholder')}](https://)`,
+    image: `![${selection || t('imageAltPlaceholder')}](./image.png)`,
     table: `| ${t('tableColumn')} 1 | ${t('tableColumn')} 2 | ${t('tableColumn')} 3 |\n| --- | --- | --- |\n|  |  |  |\n|  |  |  |`,
+    tableRow: '',
+    tableColumn: '',
     codeBlock: `\`\`\`\n${selection || ''}\n\`\`\``,
+    mathBlock: `$$\n${selection || 'E = mc^2'}\n$$`,
+    footnote: `${selection || t('footnoteTextPlaceholder')}[^1]\n\n[^1]: ${t('footnotePlaceholder')}`,
+    horizontalRule: '---',
+    toc: '[TOC]',
+    frontmatter: `---\ntitle: "${selection || noteTitleFromPath(state.currentFile || t('untitled'))}"\ntags: []\n---`,
   };
 
   await applyEditorInsertion(snippets[action], selection);
+}
+
+async function mutateFirstMarkdownTable(action: 'tableRow' | 'tableColumn') {
+  const table = findFirstMarkdownTable(state.content);
+  if (!table) {
+    await runEditorAction('table');
+    return;
+  }
+
+  const lines = state.content.split(/\r?\n/);
+  const tableLines = lines.slice(table.start, table.end + 1);
+  const columnCount = splitTableRow(tableLines[0]).length;
+
+  if (action === 'tableRow') {
+    tableLines.push(tableRow(Array(columnCount).fill('')));
+  } else {
+    for (let i = 0; i < tableLines.length; i += 1) {
+      const cells = splitTableRow(tableLines[i]);
+      cells.push(i === 1 ? '---' : '');
+      tableLines[i] = tableRow(cells);
+    }
+  }
+
+  lines.splice(table.start, table.end - table.start + 1, ...tableLines);
+  state.content = lines.join('\n');
+  if (state.isSourceMode) {
+    sourceEditorEl.value = state.content;
+  } else {
+    await reloadEditor(state.content);
+  }
+  state.modified = true;
+  updateStatusBar();
+  updateKnowledgeState();
+}
+
+function findFirstMarkdownTable(markdown: string) {
+  const lines = markdown.split(/\r?\n/);
+  for (let i = 0; i < lines.length - 1; i += 1) {
+    if (isTableRow(lines[i]) && /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(lines[i + 1])) {
+      let end = i + 1;
+      while (end + 1 < lines.length && isTableRow(lines[end + 1])) end += 1;
+      return { start: i, end };
+    }
+  }
+  return null;
+}
+
+function isTableRow(line: string) {
+  return line.includes('|') && !/^\s*$/.test(line);
+}
+
+function splitTableRow(line: string) {
+  return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((cell) => cell.trim());
+}
+
+function tableRow(cells: string[]) {
+  return `| ${cells.join(' | ')} |`;
 }
 
 function showEditorContextMenu(x: number, y: number) {
@@ -2107,7 +2382,8 @@ function markdownToHtml(markdown: string) {
   let inCode = false;
   const html: string[] = [];
 
-  for (const rawLine of lines) {
+  for (let i = 0; i < lines.length; i += 1) {
+    const rawLine = lines[i];
     const line = rawLine.replace(/\t/g, '    ');
     if (line.startsWith('```')) {
       inCode = !inCode;
@@ -2124,8 +2400,28 @@ function markdownToHtml(markdown: string) {
     if (heading) {
       const level = heading[1].length;
       html.push(`<h${level}>${inlineMarkdown(heading[2])}</h${level}>`);
+    } else if (isTableRow(line) && lines[i + 1] && /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(lines[i + 1])) {
+      const headers = splitTableRow(line);
+      i += 2;
+      const rows: string[][] = [];
+      while (i < lines.length && isTableRow(lines[i])) {
+        rows.push(splitTableRow(lines[i]));
+        i += 1;
+      }
+      i -= 1;
+      html.push(`<table><thead><tr>${headers.map((cell) => `<th>${inlineMarkdown(cell)}</th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${inlineMarkdown(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table>`);
+    } else if (/^[-*]\s+\[[ xX]\]\s+/.test(line)) {
+      const checked = /^[-*]\s+\[[xX]\]/.test(line);
+      html.push(`<p><input type="checkbox" disabled ${checked ? 'checked' : ''}> ${inlineMarkdown(line.replace(/^[-*]\s+\[[ xX]\]\s+/, ''))}</p>`);
     } else if (/^[-*]\s+/.test(line)) {
       html.push(`<p>• ${inlineMarkdown(line.replace(/^[-*]\s+/, ''))}</p>`);
+    } else if (/^\d+\.\s+/.test(line)) {
+      html.push(`<p>${inlineMarkdown(line)}</p>`);
+    } else if (/^---+$/.test(line.trim())) {
+      html.push('<hr>');
+    } else if (/^\[TOC\]$/i.test(line.trim())) {
+      const headings = parseNote(state.currentFile || 'export', markdown).headings;
+      html.push(`<nav class="toc">${headings.map((heading) => `<a style="padding-left:${(heading.level - 1) * 14}px" href="#${escapeHtml(heading.slug)}">${escapeHtml(heading.text)}</a>`).join('')}</nav>`);
     } else if (line.trim() === '') {
       html.push('');
     } else {
@@ -2138,10 +2434,13 @@ function markdownToHtml(markdown: string) {
 
 function inlineMarkdown(value: string) {
   return escapeHtml(value)
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img alt="$1" src="$2">')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
     .replace(/\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|([^\]]+))?\]\]/g, (_, target, label) =>
       `<a href="#${encodeURIComponent(target)}">${escapeHtml(label || target)}</a>`
     )
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/~~([^~]+)~~/g, '<del>$1</del>')
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
     .replace(/`([^`]+)`/g, '<code>$1</code>');
 }
@@ -2165,6 +2464,7 @@ async function exportHtml() {
 body{margin:0;background:${state.customTheme.surface};color:${state.customTheme.text};font:16px/1.78 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 main{max-width:${state.customTheme.editorWidth}px;margin:56px auto;padding:0 32px}
 a{color:${state.customTheme.accent}} pre{padding:18px;border-radius:16px;background:rgba(0,0,0,.06);overflow:auto} code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+table{width:100%;border-collapse:collapse;margin:1.2em 0}th,td{border:1px solid rgba(120,130,160,.28);padding:10px 12px;text-align:left}th{background:rgba(120,130,160,.08)}img{max-width:100%;height:auto}.toc{display:grid;gap:6px;margin:1em 0 2em}hr{border:0;border-top:1px solid rgba(120,130,160,.28);margin:2em 0}
 </style>
 </head>
 <body><main>${markdownToHtml(state.content)}</main></body>
@@ -2706,6 +3006,31 @@ globalSearchInputEl.addEventListener('keydown', (event) => {
     closeGlobalSearch();
   }
 });
+
+findInputEl.addEventListener('input', () => updateFindMatches());
+findInputEl.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    moveFind(event.shiftKey ? -1 : 1);
+  } else if (event.key === 'Escape') {
+    event.preventDefault();
+    closeFindPanel();
+  }
+});
+replaceInputEl.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    void replaceCurrentMatch();
+  } else if (event.key === 'Escape') {
+    event.preventDefault();
+    closeFindPanel();
+  }
+});
+document.getElementById('btnFindPrev')?.addEventListener('click', () => moveFind(-1));
+document.getElementById('btnFindNext')?.addEventListener('click', () => moveFind(1));
+document.getElementById('btnReplaceOne')?.addEventListener('click', () => { void replaceCurrentMatch(); });
+document.getElementById('btnReplaceAll')?.addEventListener('click', () => { void replaceAllMatches(); });
+document.getElementById('btnCloseFind')?.addEventListener('click', closeFindPanel);
 
 document.getElementById('btnCloseSettings')?.addEventListener('click', () => modalSettingsEl.close());
 document.querySelectorAll<HTMLButtonElement>('.settings-tab').forEach((button) => {
