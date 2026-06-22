@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Markdown233",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "identifier": "com.markdown233.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -18,7 +18,7 @@
         "height": 800,
         "minWidth": 800,
         "minHeight": 600,
-        "decorations": true,
+        "decorations": false,
         "resizable": true
       }
     ],
@@ -28,6 +28,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": ["nsis", "app", "dmg"],
     "publisher": "neko233",
     "category": "Productivity",
@@ -38,5 +39,16 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEIxRjkxN0Q0N0M3OUNBMzYKUldRMnlubDgxQmY1c2FyTUxNdCtXK3RqdWxFRWMwZzNxMW1ZTytrczZRQmZyS0ZYcVQ1bWFHZ3YK",
+      "endpoints": [
+        "https://github.com/neko233-com/markdown233/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

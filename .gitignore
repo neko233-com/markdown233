@@ -13,6 +13,8 @@ dist-ssr
 e2e-artifacts
 release
 release-check
+release-signed
+.tauri/
 *.local
 
 # Editor directories and files

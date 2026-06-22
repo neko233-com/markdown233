@@ -16,6 +16,7 @@ case "$OS" in
 esac
 
 cd "$ROOT"
+export CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-1}"
 if [ -f package-lock.json ]; then
     npm ci
 else
@@ -24,12 +25,12 @@ fi
 
 mkdir -p "$OUT_DIR"
 if [ "$OS" = "Darwin" ]; then
-    npx tauri build --bundles app,dmg
+    npx tauri build --bundles app,dmg --no-sign --config src-tauri/tauri.no-updater-artifacts.conf.json
     cp -R "$ROOT/src-tauri/target/release/bundle/macos/${PRODUCT_NAME}.app" "$OUT_DIR/" 2>/dev/null || true
     cp "$ROOT/src-tauri/target/release/bundle/dmg/"*.dmg "$OUT_DIR/"
     echo "Release ready: $OUT_DIR"
 else
-    npx tauri build --bundles nsis
+    npx tauri build --bundles nsis --config src-tauri/tauri.no-updater-artifacts.conf.json
     cp "$ROOT/src-tauri/target/release/markdown233.exe" "$OUT_DIR/"
     cp "$ROOT/src-tauri/target/release/bundle/nsis/"*.exe "$OUT_DIR/"
     echo "Release ready: $OUT_DIR"

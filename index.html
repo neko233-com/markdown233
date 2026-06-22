@@ -11,10 +11,21 @@
   <body>
     <div id="app">
       <!-- Title Bar (Custom) -->
-      <header class="titlebar">
-        <div class="titlebar-drag">
-          <span class="app-title">Markdown233</span>
-          <span class="file-title" id="fileTitle" data-i18n="fileNotOpen">未打开文件</span>
+      <header class="titlebar" data-tauri-drag-region>
+        <div class="titlebar-drag" data-tauri-drag-region>
+          <span class="app-title" data-tauri-drag-region>Markdown233</span>
+          <span class="file-title" id="fileTitle" data-i18n="fileNotOpen" data-tauri-drag-region>未打开文件</span>
+        </div>
+        <div class="window-controls" aria-label="Window controls">
+          <button class="window-control" id="btnWindowMinimize" title="最小化" data-i18n-title="windowMinimize" aria-label="Minimize">
+            <span></span>
+          </button>
+          <button class="window-control" id="btnWindowMaximize" title="最大化" data-i18n-title="windowMaximize" aria-label="Maximize">
+            <span></span>
+          </button>
+          <button class="window-control close" id="btnWindowClose" title="关闭" data-i18n-title="windowClose" aria-label="Close">
+            <span></span>
+          </button>
         </div>
       </header>
 
@@ -170,14 +181,22 @@
               </svg>
             </button>
           </div>
-          <div class="sidebar-content" id="fileTree">
-            <div class="empty-state">
-              <p data-i18n="openFolderHint">打开文件夹以查看文件</p>
-              <button class="btn-open-folder" id="btnOpenFolderSidebar" data-i18n="openFolder">打开文件夹</button>
-            </div>
+          <div class="sidebar-mode-switch">
+            <button class="sidebar-mode active" data-sidebar-mode="files" data-i18n="sidebarFiles">文件</button>
+            <button class="sidebar-mode" data-sidebar-mode="sync" data-i18n="sidebarSync">云同步</button>
           </div>
-          <!-- Cloud Sync Panel -->
-          <div class="sidebar-section" id="gitPanel">
+          <section class="sidebar-pane active" data-sidebar-pane="files">
+            <div class="tree-search">
+              <input id="fileTreeSearch" type="search" placeholder="搜索文件或目录" data-i18n-placeholder="searchFilesPlaceholder">
+            </div>
+            <div class="sidebar-content" id="fileTree">
+              <div class="empty-state">
+                <p data-i18n="openFolderHint">打开文件夹以查看文件</p>
+                <button class="btn-open-folder" id="btnOpenFolderSidebar" data-i18n="openFolder">打开文件夹</button>
+              </div>
+            </div>
+          </section>
+          <section class="sidebar-pane sync-pane" id="gitPanel" data-sidebar-pane="sync">
             <div class="sidebar-header">
               <span class="sidebar-title" data-i18n="cloudSync">云同步</span>
             </div>
@@ -214,7 +233,7 @@
                 <!-- Git status files will be rendered here -->
               </div>
             </div>
-          </div>
+          </section>
         </aside>
 
         <!-- Editor Area -->
@@ -224,6 +243,20 @@
           </div>
           <!-- Source Mode Editor (hidden by default) -->
           <textarea class="source-editor hidden" id="sourceEditor" spellcheck="false"></textarea>
+        </div>
+
+        <div class="editor-context-menu hidden" id="editorContextMenu" role="menu">
+          <button type="button" data-editor-action="bold" role="menuitem"><span data-i18n="formatBold">加粗</span><kbd>⌘B</kbd></button>
+          <button type="button" data-editor-action="italic" role="menuitem"><span data-i18n="formatItalic">斜体</span><kbd>⌘I</kbd></button>
+          <button type="button" data-editor-action="inlineCode" role="menuitem"><span data-i18n="formatInlineCode">行内代码</span><kbd>⌘E</kbd></button>
+          <div class="context-separator"></div>
+          <button type="button" data-editor-action="heading2" role="menuitem"><span data-i18n="insertHeading">标题</span><kbd>⌥2</kbd></button>
+          <button type="button" data-editor-action="quote" role="menuitem"><span data-i18n="insertQuote">引用</span><kbd>⌥Q</kbd></button>
+          <button type="button" data-editor-action="bulletList" role="menuitem"><span data-i18n="insertBulletList">无序列表</span><kbd>⌘⇧8</kbd></button>
+          <button type="button" data-editor-action="orderedList" role="menuitem"><span data-i18n="insertOrderedList">有序列表</span><kbd>⌘⇧7</kbd></button>
+          <div class="context-separator"></div>
+          <button type="button" data-editor-action="table" role="menuitem"><span data-i18n="insertTable">插入表格</span><kbd>⌘⌥T</kbd></button>
+          <button type="button" data-editor-action="codeBlock" role="menuitem"><span data-i18n="insertCodeBlock">代码块</span><kbd>⌘⌥C</kbd></button>
         </div>
 
         <aside class="inspector" id="inspector">

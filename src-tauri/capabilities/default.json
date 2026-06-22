@@ -8,6 +8,8 @@
     "opener:default",
     "process:default",
     "updater:default",
+    "updater:allow-check",
+    "updater:allow-download-and-install",
     "dialog:default",
     "dialog:allow-open",
     "dialog:allow-save",

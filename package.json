@@ -1,7 +1,7 @@
 {
   "name": "markdown233",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,10 +9,10 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "dev:native": "tauri dev",
-    "build:native": "tauri build",
-    "build:native:small": "tauri build",
-    "build:native:windows": "tauri build --bundles nsis",
-    "build:native:macos": "tauri build --bundles app,dmg",
+    "build:native": "tauri build --config src-tauri/tauri.no-updater-artifacts.conf.json",
+    "build:native:small": "tauri build --config src-tauri/tauri.no-updater-artifacts.conf.json",
+    "build:native:windows": "tauri build --bundles nsis --config src-tauri/tauri.no-updater-artifacts.conf.json",
+    "build:native:macos": "tauri build --bundles app,dmg --no-sign --config src-tauri/tauri.no-updater-artifacts.conf.json",
     "install:native": "powershell -ExecutionPolicy Bypass -File scripts/install.ps1",
     "release:windows": "powershell -ExecutionPolicy Bypass -File scripts/release.ps1",
     "release:signed:windows": "powershell -ExecutionPolicy Bypass -File scripts/release-signed.ps1",

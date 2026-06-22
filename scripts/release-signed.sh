@@ -13,8 +13,16 @@ require_env() {
   fi
 }
 
-require_env TAURI_SIGNING_PRIVATE_KEY
+if [ -z "${TAURI_SIGNING_PRIVATE_KEY:-}" ] && [ -z "${TAURI_SIGNING_PRIVATE_KEY_PATH:-}" ]; then
+  echo "Missing required environment variable: TAURI_SIGNING_PRIVATE_KEY or TAURI_SIGNING_PRIVATE_KEY_PATH" >&2
+  exit 1
+fi
 require_env TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+
+if [ -z "${TAURI_SIGNING_PRIVATE_KEY:-}" ] && [ -n "${TAURI_SIGNING_PRIVATE_KEY_PATH:-}" ]; then
+  TAURI_SIGNING_PRIVATE_KEY="$(cat "$TAURI_SIGNING_PRIVATE_KEY_PATH")"
+  export TAURI_SIGNING_PRIVATE_KEY
+fi
 
 if [ "$(uname -s)" = "Darwin" ]; then
   require_env APPLE_SIGNING_IDENTITY
@@ -25,19 +33,17 @@ fi
 
 cd "$ROOT_DIR"
 mkdir -p "$OUT_DIR"
+export CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-1}"
 
 npm ci
-npx tauri build
+case "$(uname -s)" in
+  Darwin*) npx tauri build --bundles app,dmg ;;
+  MINGW*|MSYS*|CYGWIN*) npx tauri build --bundles nsis ;;
+  *) echo "Unsupported OS for signed release." >&2; exit 1 ;;
+esac
 
 VERSION="$(node -p "require('./package.json').version")"
-cat > "$OUT_DIR/latest.json" <<JSON
-{
-  "version": "$VERSION",
-  "notes": "Markdown233 $VERSION",
-  "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "platforms": {},
-  "updater_url": "$UPDATER_URL"
-}
-JSON
+find "$ROOT_DIR/src-tauri/target/release/bundle" -type f \( -name "*$VERSION*.exe" -o -name "*$VERSION*.zip" -o -name "*$VERSION*.sig" -o -name "*$VERSION*.dmg" -o -name "*$VERSION*.gz" \) -exec cp {} "$OUT_DIR/" \;
+MARKDOWN233_BUNDLE_DIR="$OUT_DIR" MARKDOWN233_MANIFEST_OUT="$OUT_DIR/latest.json" npm run release:manifest
 
-echo "Signed release build finished. Fill platform URLs/signatures in $OUT_DIR/latest.json after upload."
+echo "Signed release build finished: $OUT_DIR"

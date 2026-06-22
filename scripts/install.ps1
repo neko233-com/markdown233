@@ -31,6 +31,10 @@ if (-not $InstallDir) {
 
 Push-Location $Root
 try {
+    if (-not $env:CARGO_BUILD_JOBS) {
+        $env:CARGO_BUILD_JOBS = "1"
+    }
+
     if (Test-Path "package-lock.json") {
         npm ci
         if ($LASTEXITCODE -ne 0) { throw "npm ci failed with exit code $LASTEXITCODE" }
@@ -39,7 +43,7 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "npm install failed with exit code $LASTEXITCODE" }
     }
 
-    npx tauri build --bundles nsis
+    npx tauri build --bundles nsis --config src-tauri/tauri.no-updater-artifacts.conf.json
     if ($LASTEXITCODE -ne 0) { throw "tauri build failed with exit code $LASTEXITCODE" }
 
     $ReleaseExe = Join-Path $Root "src-tauri/target/release/$BinaryName.exe"

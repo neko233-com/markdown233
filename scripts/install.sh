@@ -51,6 +51,7 @@ if [ -z "$INSTALL_DIR" ]; then
 fi
 
 cd "$ROOT"
+export CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-1}"
 if [ -f package-lock.json ]; then
     npm ci
 else
@@ -58,8 +59,8 @@ else
 fi
 
 case "$(uname -s)" in
-    Darwin*) npx tauri build --bundles app,dmg ;;
-    MINGW*|MSYS*|CYGWIN*) npx tauri build --bundles nsis ;;
+    Darwin*) npx tauri build --bundles app,dmg --no-sign --config src-tauri/tauri.no-updater-artifacts.conf.json ;;
+    MINGW*|MSYS*|CYGWIN*) npx tauri build --bundles nsis --config src-tauri/tauri.no-updater-artifacts.conf.json ;;
     *)
         echo "unsupported os: only Windows and macOS are supported"
         exit 1

@@ -21,6 +21,8 @@ async function walk(dir) {
 
 function platformFor(file) {
   const lower = file.toLowerCase();
+  if (lower.endsWith('.sig')) return null;
+  if (lower.includes('nsis.zip')) return 'windows-x86_64';
   if (lower.endsWith('.exe') || lower.includes('nsis')) return 'windows-x86_64';
   if (lower.includes('aarch64') && (lower.endsWith('.dmg') || lower.endsWith('.app.tar.gz'))) return 'darwin-aarch64';
   if (lower.endsWith('.dmg') || lower.endsWith('.app.tar.gz')) return 'darwin-x86_64';
@@ -35,8 +37,12 @@ for (const file of files) {
   if (!platform) continue;
   const info = await stat(file);
   const name = basename(file);
+  const signature = await readFile(`${file}.sig`, 'utf8').catch(async () => {
+    const siblingSig = files.find((candidate) => candidate === `${file}.sig` || basename(candidate) === `${name}.sig`);
+    return siblingSig ? readFile(siblingSig, 'utf8') : null;
+  });
   platforms[platform] = {
-    signature: process.env[`MARKDOWN233_SIGNATURE_${platform.replace(/-/g, '_').toUpperCase()}`] || 'UNSIGNED',
+    signature: (signature || process.env[`MARKDOWN233_SIGNATURE_${platform.replace(/-/g, '_').toUpperCase()}`] || 'UNSIGNED').trim(),
     url: `https://github.com/${repo}/releases/download/${tag}/${name}`,
     size: info.size,
   };

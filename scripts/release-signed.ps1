@@ -13,8 +13,14 @@ function Require-Env($name) {
   }
 }
 
-Require-Env "TAURI_SIGNING_PRIVATE_KEY"
+if (-not [Environment]::GetEnvironmentVariable("TAURI_SIGNING_PRIVATE_KEY") -and -not [Environment]::GetEnvironmentVariable("TAURI_SIGNING_PRIVATE_KEY_PATH")) {
+  throw "Missing required environment variable: TAURI_SIGNING_PRIVATE_KEY or TAURI_SIGNING_PRIVATE_KEY_PATH"
+}
 Require-Env "TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
+
+if (-not $env:TAURI_SIGNING_PRIVATE_KEY -and $env:TAURI_SIGNING_PRIVATE_KEY_PATH) {
+  $env:TAURI_SIGNING_PRIVATE_KEY = Get-Content -Raw -LiteralPath $env:TAURI_SIGNING_PRIVATE_KEY_PATH
+}
 
 if ($IsWindows -or $env:OS -eq "Windows_NT") {
   if (-not $env:WINDOWS_SIGN_CERT_PATH -and -not $env:WINDOWS_SIGN_CERT_THUMBPRINT) {
@@ -30,23 +36,32 @@ if ($IsMacOS) {
 }
 
 Set-Location $root
+if (-not $env:CARGO_BUILD_JOBS) {
+  $env:CARGO_BUILD_JOBS = "1"
+}
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 
 npm ci
 if ($LASTEXITCODE -ne 0) { throw "npm ci failed" }
 
-npx tauri build
+if ($IsWindows -or $env:OS -eq "Windows_NT") {
+  npx tauri build --bundles nsis
+} elseif ($IsMacOS) {
+  npx tauri build --bundles app,dmg
+} else {
+  throw "Unsupported OS for signed release."
+}
 if ($LASTEXITCODE -ne 0) { throw "tauri build failed" }
 
 $version = (Get-Content package.json | ConvertFrom-Json).version
-$manifest = @{
-  version = $version
-  notes = "Markdown233 $version"
-  pub_date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-  platforms = @{}
-  updater_url = $UpdaterUrl
-}
+Get-ChildItem -LiteralPath (Join-Path $root "src-tauri/target/release/bundle") -Recurse -File |
+  Where-Object { $_.Name -like "*$version*" -and $_.Extension -in ".exe", ".zip", ".sig", ".dmg", ".gz" } |
+  Copy-Item -Destination $out -Force
 
 $latestPath = Join-Path $out "latest.json"
-$manifest | ConvertTo-Json -Depth 8 | Set-Content -Encoding utf8 $latestPath
-Write-Host "Signed release build finished. Fill platform URLs/signatures in $latestPath after upload."
+$env:MARKDOWN233_BUNDLE_DIR = $out
+$env:MARKDOWN233_MANIFEST_OUT = $latestPath
+npm run release:manifest
+if ($LASTEXITCODE -ne 0) { throw "manifest generation failed" }
+
+Write-Host "Signed release build finished: $out"

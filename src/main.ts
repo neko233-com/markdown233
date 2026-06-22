@@ -12,6 +12,7 @@ import { readTextFile, writeTextFile, readDir, mkdir, writeFile } from '@tauri-a
 import { relaunch } from '@tauri-apps/plugin-process';
 import { check } from '@tauri-apps/plugin-updater';
 import { join } from '@tauri-apps/api/path';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import {
   applyStaticI18n,
   currentLanguageSetting,
@@ -134,6 +135,7 @@ interface GraphState {
   isPanning: boolean;
   lastX: number;
   lastY: number;
+  pointerMoved: boolean;
   filter: string;
 }
 
@@ -204,6 +206,9 @@ interface AppState {
   content: string;
   modified: boolean;
   fileTree: FileNode[];
+  fileTreeSearch: string;
+  fileTreeSearchResults: FileNode[];
+  fileTreeSearching: boolean;
   expandedDirs: Set<string>;
   activeFilePath: string | null;
   isSourceMode: boolean;
@@ -233,8 +238,17 @@ const DEFAULT_SHORTCUTS: Record<string, string> = {
   'folder.open': 'Mod+Shift+O',
   'file.save': 'Mod+S',
   'file.saveAs': 'Mod+Shift+S',
-  'view.sidebar': 'Mod+B',
+  'view.sidebar': 'Mod+Shift+B',
   'settings.open': 'Mod+,',
+  'edit.bold': 'Mod+B',
+  'edit.italic': 'Mod+I',
+  'edit.inlineCode': 'Mod+E',
+  'edit.bulletList': 'Mod+Shift+8',
+  'edit.orderedList': 'Mod+Shift+7',
+  'edit.heading2': 'Alt+2',
+  'edit.quote': 'Alt+Q',
+  'edit.table': 'Mod+Alt+T',
+  'edit.codeBlock': 'Mod+Alt+C',
 };
 
 const state: AppState = {
@@ -243,6 +257,9 @@ const state: AppState = {
   content: '',
   modified: false,
   fileTree: [],
+  fileTreeSearch: '',
+  fileTreeSearchResults: [],
+  fileTreeSearching: false,
   expandedDirs: new Set(),
   activeFilePath: null,
   isSourceMode: false,
@@ -266,6 +283,7 @@ const state: AppState = {
     isPanning: false,
     lastX: 0,
     lastY: 0,
+    pointerMoved: false,
     filter: '',
   },
   shortcuts: loadShortcuts(),
@@ -279,8 +297,10 @@ const state: AppState = {
 const editorEl = document.getElementById('editor')!;
 const sourceEditorEl = document.getElementById('sourceEditor') as HTMLTextAreaElement;
 const editorWrapper = document.getElementById('editorWrapper')!;
+const editorContextMenuEl = document.getElementById('editorContextMenu')!;
 const sidebarEl = document.getElementById('sidebar')!;
 const fileTreeEl = document.getElementById('fileTree')!;
+const fileTreeSearchEl = document.getElementById('fileTreeSearch') as HTMLInputElement;
 const fileTitleEl = document.getElementById('fileTitle')!;
 const gitBranchEl = document.getElementById('gitBranch')!;
 const gitChangesEl = document.getElementById('gitChanges')!;
@@ -324,6 +344,8 @@ const statusMessageEl = document.getElementById('statusMessage')!;
 const statusModeEl = document.getElementById('statusMode')!;
 const commands: AppCommand[] = [];
 const pluginPanels: PluginPanel[] = [];
+let fileTreeSearchTimer: number | undefined;
+let fileTreeSearchToken = 0;
 
 // Initialize Theme
 document.documentElement.setAttribute('data-theme', state.theme);
@@ -571,6 +593,15 @@ function initCommandRegistry() {
   registerCommand({ id: 'file.attach', title: () => t('insertAttachment'), group: () => t('commandGroupFile'), run: chooseAttachment });
   registerCommand({ id: 'file.exportHtml', title: () => t('exportHtml'), group: () => t('commandGroupExport'), run: exportHtml });
   registerCommand({ id: 'file.printPdf', title: () => t('printPdf'), group: () => t('commandGroupExport'), run: printPdf });
+  registerCommand({ id: 'edit.bold', title: () => t('formatBold'), group: () => t('commandGroupEdit'), run: () => runEditorAction('bold') });
+  registerCommand({ id: 'edit.italic', title: () => t('formatItalic'), group: () => t('commandGroupEdit'), run: () => runEditorAction('italic') });
+  registerCommand({ id: 'edit.inlineCode', title: () => t('formatInlineCode'), group: () => t('commandGroupEdit'), run: () => runEditorAction('inlineCode') });
+  registerCommand({ id: 'edit.heading2', title: () => t('insertHeading'), group: () => t('commandGroupEdit'), run: () => runEditorAction('heading2') });
+  registerCommand({ id: 'edit.quote', title: () => t('insertQuote'), group: () => t('commandGroupEdit'), run: () => runEditorAction('quote') });
+  registerCommand({ id: 'edit.bulletList', title: () => t('insertBulletList'), group: () => t('commandGroupEdit'), run: () => runEditorAction('bulletList') });
+  registerCommand({ id: 'edit.orderedList', title: () => t('insertOrderedList'), group: () => t('commandGroupEdit'), run: () => runEditorAction('orderedList') });
+  registerCommand({ id: 'edit.table', title: () => t('insertTable'), group: () => t('commandGroupEdit'), run: () => runEditorAction('table') });
+  registerCommand({ id: 'edit.codeBlock', title: () => t('insertCodeBlock'), group: () => t('commandGroupEdit'), run: () => runEditorAction('codeBlock') });
   registerCommand({ id: 'view.source', title: () => t('sourceMode'), group: () => t('commandGroupView'), run: toggleSourceMode });
   registerCommand({ id: 'view.sidebar', title: () => t('toggleSidebar'), group: () => t('commandGroupView'), run: () => { sidebarEl.classList.toggle('collapsed'); } });
   registerCommand({ id: 'view.inspector', title: () => t('toggleInspector'), group: () => t('commandGroupView'), run: () => { document.getElementById('inspector')?.classList.toggle('collapsed'); } });
@@ -836,6 +867,86 @@ function insertMarkdown(markdown: string) {
   updateKnowledgeState();
 }
 
+type EditorAction =
+  | 'bold'
+  | 'italic'
+  | 'inlineCode'
+  | 'heading2'
+  | 'quote'
+  | 'bulletList'
+  | 'orderedList'
+  | 'table'
+  | 'codeBlock';
+
+function selectedEditorText() {
+  if (state.isSourceMode) {
+    return sourceEditorEl.value.slice(sourceEditorEl.selectionStart, sourceEditorEl.selectionEnd);
+  }
+
+  const selection = window.getSelection();
+  const text = selection?.toString() || '';
+  return editorEl.contains(selection?.anchorNode || null) ? text : '';
+}
+
+function replaceSourceSelection(value: string, cursorOffset = value.length) {
+  const start = sourceEditorEl.selectionStart;
+  const end = sourceEditorEl.selectionEnd;
+  sourceEditorEl.value = `${sourceEditorEl.value.slice(0, start)}${value}${sourceEditorEl.value.slice(end)}`;
+  sourceEditorEl.selectionStart = sourceEditorEl.selectionEnd = start + cursorOffset;
+  state.content = sourceEditorEl.value;
+}
+
+async function applyEditorInsertion(value: string, selectedText = '') {
+  if (state.isSourceMode) {
+    replaceSourceSelection(value);
+  } else if (selectedText && state.content.includes(selectedText)) {
+    state.content = state.content.replace(selectedText, value);
+    await reloadEditor(state.content);
+  } else {
+    state.content = `${state.content.trimEnd()}\n\n${value}\n`;
+    await reloadEditor(state.content);
+  }
+
+  state.modified = true;
+  updateStatusBar();
+  updateKnowledgeState();
+}
+
+async function runEditorAction(action: EditorAction) {
+  hideEditorContextMenu();
+  welcomeScreenEl.classList.add('hidden');
+  const selection = selectedEditorText();
+  const fallback = t('selectedTextPlaceholder');
+  const text = selection || fallback;
+
+  const snippets: Record<EditorAction, string> = {
+    bold: `**${text}**`,
+    italic: `*${text}*`,
+    inlineCode: `\`${selection || 'code'}\``,
+    heading2: `## ${selection || t('headingPlaceholder')}`,
+    quote: `> ${selection || t('quotePlaceholder')}`,
+    bulletList: `- ${selection || t('listItemPlaceholder')}`,
+    orderedList: `1. ${selection || t('listItemPlaceholder')}`,
+    table: `| ${t('tableColumn')} 1 | ${t('tableColumn')} 2 | ${t('tableColumn')} 3 |\n| --- | --- | --- |\n|  |  |  |\n|  |  |  |`,
+    codeBlock: `\`\`\`\n${selection || ''}\n\`\`\``,
+  };
+
+  await applyEditorInsertion(snippets[action], selection);
+}
+
+function showEditorContextMenu(x: number, y: number) {
+  editorContextMenuEl.classList.remove('hidden');
+  const rect = editorContextMenuEl.getBoundingClientRect();
+  const left = Math.min(x, window.innerWidth - rect.width - 10);
+  const top = Math.min(y, window.innerHeight - rect.height - 10);
+  editorContextMenuEl.style.left = `${Math.max(10, left)}px`;
+  editorContextMenuEl.style.top = `${Math.max(10, top)}px`;
+}
+
+function hideEditorContextMenu() {
+  editorContextMenuEl.classList.add('hidden');
+}
+
 // Initialize Milkdown Editor
 async function initEditor() {
   state.editor = await Editor.make()
@@ -912,16 +1023,14 @@ async function buildFileTree(dirPath: string): Promise<FileNode[]> {
     const nodes: FileNode[] = [];
 
     for (const entry of entries) {
-      // Skip hidden files and common non-markdown files
-      if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'target') {
+      if (shouldSkipFileTreeEntry(entry.name)) {
         continue;
       }
 
       const fullPath = await join(dirPath, entry.name);
       const isDir = entry.isDirectory;
 
-      // Only show markdown files and directories
-      if (!isDir && !entry.name.endsWith('.md') && !entry.name.endsWith('.markdown') && !entry.name.endsWith('.txt')) {
+      if (!isDir && !isSupportedTreeFile(entry.name)) {
         continue;
       }
 
@@ -939,18 +1048,73 @@ async function buildFileTree(dirPath: string): Promise<FileNode[]> {
       nodes.push(node);
     }
 
-    // Sort: directories first, then files
-    nodes.sort((a, b) => {
-      if (a.isDirectory && !b.isDirectory) return -1;
-      if (!a.isDirectory && b.isDirectory) return 1;
-      return a.name.localeCompare(b.name);
-    });
-
-    return nodes;
+    return sortFileNodes(nodes);
   } catch (error) {
     console.error('Error building file tree:', error);
     return [];
   }
+}
+
+async function searchFileTree(dirPath: string, query: string, token: number): Promise<FileNode[]> {
+  if (token !== fileTreeSearchToken) return [];
+
+  try {
+    const entries = await readDir(dirPath);
+    const nodes: FileNode[] = [];
+    let scanned = 0;
+
+    for (const entry of entries) {
+      if (token !== fileTreeSearchToken) return [];
+      if (shouldSkipFileTreeEntry(entry.name)) continue;
+
+      scanned += 1;
+      if (scanned % 24 === 0) {
+        await yieldToUi();
+      }
+
+      const fullPath = await join(dirPath, entry.name);
+      const isDir = entry.isDirectory;
+      if (!isDir && !isSupportedTreeFile(entry.name)) continue;
+
+      const childMatches = isDir ? await searchFileTree(fullPath, query, token) : [];
+      const selfMatches = entry.name.toLowerCase().includes(query);
+
+      if (!selfMatches && childMatches.length === 0) continue;
+
+      nodes.push({
+        path: fullPath,
+        name: entry.name,
+        isDirectory: isDir,
+        expanded: isDir,
+        children: isDir ? childMatches : undefined,
+      });
+    }
+
+    return sortFileNodes(nodes);
+  } catch (error) {
+    console.warn('File tree search skipped:', error);
+    return [];
+  }
+}
+
+function shouldSkipFileTreeEntry(name: string) {
+  return name.startsWith('.') || name === 'node_modules' || name === 'target' || name === 'dist';
+}
+
+function isSupportedTreeFile(name: string) {
+  return /\.(md|markdown|txt)$/i.test(name);
+}
+
+function sortFileNodes(nodes: FileNode[]) {
+  return nodes.sort((a, b) => {
+    if (a.isDirectory && !b.isDirectory) return -1;
+    if (!a.isDirectory && b.isDirectory) return 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+function yieldToUi() {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, 0));
 }
 
 function renderFileTree(nodes: FileNode[], container: HTMLElement, level: number = 0) {
@@ -958,7 +1122,7 @@ function renderFileTree(nodes: FileNode[], container: HTMLElement, level: number
 
   for (const node of nodes) {
     const item = document.createElement('div');
-    item.className = `tree-item ${state.activeFilePath === node.path ? 'active' : ''}`;
+    item.className = `tree-item ${node.isDirectory ? 'directory' : 'file-node'} ${state.activeFilePath === node.path ? 'active' : ''}`;
     item.style.paddingLeft = `${12 + level * 16}px`;
 
     if (node.isDirectory) {
@@ -976,6 +1140,11 @@ function renderFileTree(nodes: FileNode[], container: HTMLElement, level: number
       name.textContent = node.name;
       item.appendChild(name);
 
+      const meta = document.createElement('span');
+      meta.className = 'file-ext folder-ext';
+      meta.textContent = t('folderType');
+      item.appendChild(meta);
+
       item.addEventListener('click', async (e) => {
         e.stopPropagation();
         if (state.expandedDirs.has(node.path)) {
@@ -984,12 +1153,13 @@ function renderFileTree(nodes: FileNode[], container: HTMLElement, level: number
         } else {
           state.expandedDirs.add(node.path);
           node.expanded = true;
-          if (!node.children) {
-            node.children = await buildFileTree(node.path);
-          }
         }
         state.fileTree = await buildFileTree(state.currentFolder!);
-        renderFileTree(state.fileTree, fileTreeEl);
+        if (state.fileTreeSearch.trim()) {
+          scheduleFileTreeSearch();
+        } else {
+          renderCurrentFileTree();
+        }
       });
 
       container.appendChild(item);
@@ -1002,13 +1172,18 @@ function renderFileTree(nodes: FileNode[], container: HTMLElement, level: number
       }
     } else {
       const icon = document.createElement('span');
-      icon.className = 'icon file';
+      icon.className = `icon file ${fileIconClass(node.name)}`;
       item.appendChild(icon);
 
       const name = document.createElement('span');
       name.className = 'name';
       name.textContent = node.name;
       item.appendChild(name);
+
+      const meta = document.createElement('span');
+      meta.className = 'file-ext';
+      meta.textContent = fileTypeLabel(node.name);
+      item.appendChild(meta);
 
       item.addEventListener('click', async () => {
         await openFile(node.path);
@@ -1017,6 +1192,62 @@ function renderFileTree(nodes: FileNode[], container: HTMLElement, level: number
       container.appendChild(item);
     }
   }
+}
+
+function renderCurrentFileTree() {
+  const hasSearch = Boolean(state.fileTreeSearch.trim());
+  const nodes = hasSearch ? state.fileTreeSearchResults : state.fileTree;
+
+  if (hasSearch && state.fileTreeSearching && nodes.length === 0) {
+    fileTreeEl.innerHTML = `<div class="empty-state compact"><p>${t('searchInProgress')}</p></div>`;
+    return;
+  }
+
+  if (hasSearch && nodes.length === 0) {
+    fileTreeEl.innerHTML = `<div class="empty-state compact"><p>${t('noFileMatch')}</p></div>`;
+    return;
+  }
+
+  renderFileTree(nodes, fileTreeEl);
+}
+
+function scheduleFileTreeSearch() {
+  window.clearTimeout(fileTreeSearchTimer);
+  const query = state.fileTreeSearch.trim().toLowerCase();
+  fileTreeSearchToken += 1;
+
+  if (!query || !state.currentFolder) {
+    state.fileTreeSearching = false;
+    state.fileTreeSearchResults = [];
+    renderCurrentFileTree();
+    return;
+  }
+
+  const token = fileTreeSearchToken;
+  state.fileTreeSearching = true;
+  state.fileTreeSearchResults = [];
+  renderCurrentFileTree();
+
+  fileTreeSearchTimer = window.setTimeout(async () => {
+    const results = await searchFileTree(state.currentFolder!, query, token);
+    if (token !== fileTreeSearchToken) return;
+
+    state.fileTreeSearchResults = results;
+    state.fileTreeSearching = false;
+    renderCurrentFileTree();
+  }, 120);
+}
+
+function fileIconClass(name: string) {
+  if (/\.(md|markdown)$/i.test(name)) return 'markdown';
+  if (/\.txt$/i.test(name)) return 'text';
+  return 'plain';
+}
+
+function fileTypeLabel(name: string) {
+  if (/\.(md|markdown)$/i.test(name)) return t('markdownType');
+  if (/\.txt$/i.test(name)) return t('textType');
+  return t('fileType');
 }
 
 // File Operations
@@ -1062,7 +1293,7 @@ async function openFile(filePath: string) {
     }
 
     // Update file tree active state
-    renderFileTree(state.fileTree, fileTreeEl);
+    renderCurrentFileTree();
     updateStatusBar();
     updateKnowledgeState();
     updateGitStatus();
@@ -1117,7 +1348,7 @@ async function saveFileAs() {
       // Refresh file tree if in a folder
       if (state.currentFolder) {
         state.fileTree = await buildFileTree(state.currentFolder);
-        renderFileTree(state.fileTree, fileTreeEl);
+        renderCurrentFileTree();
       }
     } catch (error) {
       console.error('Error saving file:', error);
@@ -1140,7 +1371,7 @@ async function createLinkedNote(title: string) {
   try {
     await writeTextFile(filePath, content);
     state.fileTree = await buildFileTree(state.currentFolder);
-    renderFileTree(state.fileTree, fileTreeEl);
+    renderCurrentFileTree();
     await indexVault();
     await openFile(filePath);
     showToast(t('linkedNoteCreated'), 'success');
@@ -1202,10 +1433,14 @@ async function openFolder() {
 
   if (folderPath) {
     state.currentFolder = folderPath as string;
+    state.fileTreeSearch = '';
+    state.fileTreeSearchResults = [];
+    state.fileTreeSearching = false;
+    fileTreeSearchEl.value = '';
     welcomeScreenEl.classList.add('hidden');
     await loadVaultConfig();
     state.fileTree = await buildFileTree(state.currentFolder);
-    renderFileTree(state.fileTree, fileTreeEl);
+    renderCurrentFileTree();
     await indexVault();
     await loadPluginManifests();
 
@@ -1650,14 +1885,20 @@ function renderKnowledgePanel(activeNote: VaultNote) {
   metricTagsEl.textContent = String(allTags.size);
 
   outlineListEl.innerHTML = state.activeHeadings.length
-    ? state.activeHeadings.map((heading) =>
-        `<div class="outline-item" style="padding-left:${8 + (heading.level - 1) * 12}px">${escapeHtml(heading.text)}</div>`
+    ? state.activeHeadings.map((heading, index) =>
+        `<button class="outline-item" data-heading-index="${index}" style="padding-left:${8 + (heading.level - 1) * 12}px">${escapeHtml(heading.text)}</button>`
       ).join('')
     : `<div class="outline-item">${t('noHeading')}</div>`;
+  outlineListEl.querySelectorAll<HTMLButtonElement>('[data-heading-index]').forEach((button) => {
+    button.addEventListener('click', () => scrollToHeading(Number(button.dataset.headingIndex || 0)));
+  });
 
   backlinksListEl.innerHTML = state.activeBacklinks.length
-    ? state.activeBacklinks.map((note) => `<div class="backlink-item">${escapeHtml(note.title)}</div>`).join('')
+    ? state.activeBacklinks.map((note) => `<button class="backlink-item" data-open-note="${escapeHtml(note.path)}">${escapeHtml(note.title)}</button>`).join('')
     : `<div class="backlink-item">${t('noBacklink')}</div>`;
+  backlinksListEl.querySelectorAll<HTMLButtonElement>('[data-open-note]').forEach((button) => {
+    button.addEventListener('click', () => openFile(button.dataset.openNote || ''));
+  });
 
   unresolvedLinksListEl.innerHTML = state.unresolvedLinks.length
     ? state.unresolvedLinks.map((link) => `<button class="backlink-item unresolved-link" data-create-note="${escapeHtml(link)}">${escapeHtml(link)}</button>`).join('')
@@ -1668,18 +1909,49 @@ function renderKnowledgePanel(activeNote: VaultNote) {
 
   const tagValues = [...allTags].slice(0, 36);
   tagsListEl.innerHTML = tagValues.length
-    ? tagValues.map((tag) => `<span class="tag-chip">#${escapeHtml(tag)}</span>`).join('')
+    ? tagValues.map((tag) => `<button class="tag-chip" data-graph-filter="${escapeHtml(tag)}">#${escapeHtml(tag)}</button>`).join('')
     : '<span class="tag-chip">no-tags</span>';
+  tagsListEl.querySelectorAll<HTMLButtonElement>('[data-graph-filter]').forEach((button) => {
+    button.addEventListener('click', () => {
+      switchInspectorTab('graph');
+      graphFilterEl.value = button.dataset.graphFilter || '';
+      state.graph.filter = graphFilterEl.value;
+      updateGraphData(activeNote);
+      drawGraph();
+    });
+  });
 
   const graphRows = [activeNote, ...state.activeBacklinks].slice(0, 8);
   graphListEl.innerHTML = graphRows.length
     ? graphRows.map((note) =>
-        `<div class="graph-item">${escapeHtml(note.title)} <span>${note.links.length} links</span></div>`
+        `<button class="graph-item" data-open-note="${escapeHtml(note.path)}">${escapeHtml(note.title)} <span>${note.links.length} links</span></button>`
       ).join('')
     : `<div class="graph-item">${t('graphAfterFolder')}</div>`;
+  graphListEl.querySelectorAll<HTMLButtonElement>('[data-open-note]').forEach((button) => {
+    button.addEventListener('click', () => openFile(button.dataset.openNote || ''));
+  });
 
   updateGraphData(activeNote);
   drawGraph();
+}
+
+function scrollToHeading(index: number) {
+  const heading = state.activeHeadings[index];
+  if (!heading) return;
+
+  if (state.isSourceMode) {
+    const lines = sourceEditorEl.value.split(/\r?\n/);
+    const position = lines.slice(0, Math.max(heading.line - 1, 0)).join('\n').length + (heading.line > 1 ? 1 : 0);
+    sourceEditorEl.focus();
+    sourceEditorEl.selectionStart = sourceEditorEl.selectionEnd = position;
+    const lineHeight = parseFloat(getComputedStyle(sourceEditorEl).lineHeight) || 24;
+    sourceEditorEl.scrollTop = Math.max(0, (heading.line - 2) * lineHeight);
+    return;
+  }
+
+  const headings = [...editorEl.querySelectorAll('h1,h2,h3,h4,h5,h6')] as HTMLElement[];
+  const target = headings.find((element) => slugifyHeading(element.textContent || '') === heading.slug) || headings[index];
+  target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function updateGraphData(activeNote: VaultNote) {
@@ -1907,16 +2179,16 @@ function printPdf() {
   window.print();
 }
 
-async function checkForUpdates() {
+async function checkForUpdates(options: { silent?: boolean } = {}) {
   if (!isNativeRuntime()) {
-    showToast(t('nativeOnlyUpdate'), 'warning');
+    if (!options.silent) showToast(t('nativeOnlyUpdate'), 'warning');
     return;
   }
 
   try {
     const update = await check();
     if (!update) {
-      showToast(t('alreadyLatest'), 'success');
+      if (!options.silent) showToast(t('alreadyLatest'), 'success');
       return;
     }
 
@@ -1931,8 +2203,15 @@ async function checkForUpdates() {
     await relaunch();
   } catch (error) {
     console.error('Update check failed:', error);
-    showToast(t('updateCheckFailed', { error: String(error) }), 'error');
+    if (!options.silent) showToast(t('updateCheckFailed', { error: String(error) }), 'error');
   }
+}
+
+function scheduleAutoUpdateCheck() {
+  if (localStorage.getItem('autoUpdateCheck') === 'off') return;
+  window.setTimeout(() => {
+    void checkForUpdates({ silent: true });
+  }, 2500);
 }
 
 async function loadSyncStrategies() {
@@ -2282,6 +2561,24 @@ document.getElementById('btnToggleSidebar')?.addEventListener('click', () => {
   sidebarEl.classList.toggle('collapsed');
 });
 
+document.getElementById('btnWindowMinimize')?.addEventListener('click', () => {
+  if (isNativeRuntime()) void getCurrentWindow().minimize();
+});
+
+document.getElementById('btnWindowMaximize')?.addEventListener('click', async () => {
+  if (!isNativeRuntime()) return;
+  const currentWindow = getCurrentWindow();
+  if (await currentWindow.isMaximized()) {
+    await currentWindow.unmaximize();
+  } else {
+    await currentWindow.maximize();
+  }
+});
+
+document.getElementById('btnWindowClose')?.addEventListener('click', () => {
+  if (isNativeRuntime()) void getCurrentWindow().close();
+});
+
 document.getElementById('btnNew')?.addEventListener('click', newFile);
 document.getElementById('btnOpenFile')?.addEventListener('click', async () => {
   const filePath = await open({
@@ -2313,10 +2610,27 @@ document.getElementById('btnToggleInspector')?.addEventListener('click', () => {
 document.getElementById('btnRefreshTree')?.addEventListener('click', async () => {
   if (state.currentFolder) {
     state.fileTree = await buildFileTree(state.currentFolder);
-    renderFileTree(state.fileTree, fileTreeEl);
+    renderCurrentFileTree();
     await indexVault();
     showToast(t('refreshed'), 'success');
   }
+});
+
+document.querySelectorAll<HTMLButtonElement>('[data-sidebar-mode]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const mode = button.dataset.sidebarMode || 'files';
+    document.querySelectorAll<HTMLButtonElement>('[data-sidebar-mode]').forEach((item) => {
+      item.classList.toggle('active', item.dataset.sidebarMode === mode);
+    });
+    document.querySelectorAll<HTMLElement>('[data-sidebar-pane]').forEach((pane) => {
+      pane.classList.toggle('active', pane.dataset.sidebarPane === mode);
+    });
+  });
+});
+
+fileTreeSearchEl.addEventListener('input', () => {
+  state.fileTreeSearch = fileTreeSearchEl.value;
+  scheduleFileTreeSearch();
 });
 
 document.querySelectorAll<HTMLButtonElement>('.inspector-tab').forEach((button) => {
@@ -2448,6 +2762,25 @@ sourceEditorEl.addEventListener('drop', handleAttachmentEvent);
 editorEl.addEventListener('dragover', (event) => event.preventDefault());
 sourceEditorEl.addEventListener('dragover', (event) => event.preventDefault());
 
+[editorWrapper, editorEl, sourceEditorEl].forEach((target) => {
+  target.addEventListener('contextmenu', (event) => {
+    event.preventDefault();
+    showEditorContextMenu(event.clientX, event.clientY);
+  }, { capture: true });
+});
+
+editorContextMenuEl.addEventListener('click', (event) => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-editor-action]');
+  if (!button) return;
+  void runEditorAction(button.dataset.editorAction as EditorAction);
+});
+
+document.addEventListener('click', (event) => {
+  if (!editorContextMenuEl.contains(event.target as Node)) {
+    hideEditorContextMenu();
+  }
+});
+
 graphFilterEl.addEventListener('input', () => {
   state.graph.filter = graphFilterEl.value;
   updateKnowledgeState();
@@ -2466,6 +2799,7 @@ graphCanvasEl.addEventListener('mousedown', (event) => {
   state.graph.isPanning = !node;
   state.graph.lastX = point.screenX;
   state.graph.lastY = point.screenY;
+  state.graph.pointerMoved = false;
 });
 window.addEventListener('mousemove', (event) => {
   if (!state.graph.dragNodeId && !state.graph.isPanning) return;
@@ -2474,6 +2808,9 @@ window.addEventListener('mousemove', (event) => {
   const screenY = event.clientY - rect.top;
   const dx = screenX - state.graph.lastX;
   const dy = screenY - state.graph.lastY;
+  if (Math.abs(dx) + Math.abs(dy) > 2) {
+    state.graph.pointerMoved = true;
+  }
 
   if (state.graph.dragNodeId) {
     const node = state.graph.nodes.find((item) => item.id === state.graph.dragNodeId);
@@ -2491,8 +2828,12 @@ window.addEventListener('mousemove', (event) => {
   drawGraph();
 });
 window.addEventListener('mouseup', () => {
+  if (state.graph.dragNodeId && !state.graph.pointerMoved) {
+    void openFile(state.graph.dragNodeId);
+  }
   state.graph.dragNodeId = null;
   state.graph.isPanning = false;
+  state.graph.pointerMoved = false;
   void saveVaultConfig();
 });
 
@@ -2599,6 +2940,10 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !commandPaletteEl.classList.contains('hidden')) {
     closeCommandPalette();
   }
+
+  if (e.key === 'Escape') {
+    hideEditorContextMenu();
+  }
 });
 
 // Initialize
@@ -2614,6 +2959,7 @@ async function init() {
 
   // Welcome message
   showToast(t('welcomeToast'), 'success');
+  scheduleAutoUpdateCheck();
 }
 
 // Start app
