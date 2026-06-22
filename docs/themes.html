@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Markdown233 Themes</title>
+  <style>
+    body{margin:0;background:#fbfcff;color:#1d1d26;font:16px/1.72 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    header,main{max-width:980px;margin:auto;padding:32px}nav{display:flex;gap:14px;flex-wrap:wrap}a{color:#5b6cff;text-decoration:none;font-weight:650}
+    h1{font-size:38px;margin:48px 0 12px}section{border-top:1px solid rgba(83,91,122,.16);padding-top:20px;margin-top:28px}
+    code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}pre{overflow:auto;background:#f2f5ff;border-radius:14px;padding:16px}
+  </style>
+</head>
+<body>
+  <header>
+    <nav><a href="index.html">Overview</a><a href="plugins.html">Plugin API</a><a href="themes.html">Themes</a><a href="releases.html">Release</a></nav>
+    <h1>Theme Package</h1>
+    <p>The theme studio imports and exports a stable JSON package. Users can keep, share, override, and restore themes without touching source code.</p>
+  </header>
+  <main>
+    <section>
+      <h2>theme.json</h2>
+      <pre><code>{
+  "name": "Calm Glass",
+  "version": "1.0.0",
+  "variables": {
+    "accent": "#5b6cff",
+    "surface": "#fbfcff",
+    "text": "#1d1d26",
+    "editorWidth": 860
+  },
+  "localeOverrides": {
+    "newFile": "New note"
+  }
+}</code></pre>
+    </section>
+    <section>
+      <h2>Maintenance</h2>
+      <p>Language overrides stay separate from built-in locale files. Users can reset overrides and return to the shipped translations at any time.</p>
+    </section>
+  </main>
+</body>
+</html>

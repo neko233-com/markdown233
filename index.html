@@ -10,10 +10,31 @@
 
   <body>
     <div id="app">
-      <!-- Toolbar -->
-      <header class="toolbar">
-        <div class="toolbar-left">
-          <button class="toolbar-btn" id="btn-new" title="新建 (Ctrl+N)">
+      <!-- Title Bar (Custom) -->
+      <header class="titlebar">
+        <div class="titlebar-drag">
+          <span class="app-title">Markdown233</span>
+          <span class="file-title" id="fileTitle" data-i18n="fileNotOpen">未打开文件</span>
+        </div>
+      </header>
+
+      <!-- Menu Bar -->
+      <nav class="menubar">
+        <div class="menubar-left">
+          <button class="menu-btn" id="btnToggleSidebar" title="切换侧边栏 (Ctrl+B)" data-i18n-title="toggleSidebar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="9" y1="3" x2="9" y2="21"></line>
+            </svg>
+          </button>
+          <button class="menu-btn" id="btnCommandPalette" title="命令面板 (Ctrl+K)" data-i18n-title="commandPalette">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="m20 20-3.5-3.5"></path>
+            </svg>
+          </button>
+          <div class="menu-separator"></div>
+          <button class="menu-btn" id="btnNew" title="新建 (Ctrl+N)" data-i18n-title="newFile">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>
@@ -21,118 +42,84 @@
               <line x1="9" y1="15" x2="15" y2="15"></line>
             </svg>
           </button>
-          <button class="toolbar-btn" id="btn-open" title="打开 (Ctrl+O)">
+          <button class="menu-btn" id="btnOpenFile" title="打开文件 (Ctrl+O)" data-i18n-title="openFile">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
             </svg>
           </button>
-          <button class="toolbar-btn" id="btn-save" title="保存 (Ctrl+S)">
+          <button class="menu-btn" id="btnOpenFolder" title="打开文件夹" data-i18n-title="openFolder">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              <line x1="12" y1="11" x2="12" y2="17"></line>
+              <line x1="9" y1="14" x2="15" y2="14"></line>
+            </svg>
+          </button>
+          <button class="menu-btn" id="btnSave" title="保存 (Ctrl+S)" data-i18n-title="save">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
               <polyline points="17 21 17 13 7 13 7 21"></polyline>
               <polyline points="7 3 7 8 15 8"></polyline>
             </svg>
           </button>
-          <span class="toolbar-separator"></span>
-          <button class="toolbar-btn" id="btn-undo" title="撤销 (Ctrl+Z)">
+          <button class="menu-btn" id="btnSaveAs" title="另存为 (Ctrl+Shift+S)" data-i18n-title="saveAs">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+              <line x1="12" y1="11" x2="12" y2="17"></line>
+              <line x1="9" y1="14" x2="15" y2="14"></line>
+            </svg>
+          </button>
+          <button class="menu-btn" id="btnExportHtml" title="导出 HTML" data-i18n-title="exportHtml">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 3v12"></path>
+              <path d="m7 10 5 5 5-5"></path>
+              <path d="M5 21h14"></path>
+            </svg>
+          </button>
+          <button class="menu-btn" id="btnPrintPdf" title="打印 / 导出 PDF" data-i18n-title="printPdf">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 9V2h12v7"></path>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+              <path d="M6 14h12v8H6z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="menubar-center">
+          <!-- Git Status -->
+          <div class="git-status" id="gitStatus">
+            <span class="git-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="18" cy="18" r="3"></circle>
+                <circle cx="6" cy="6" r="3"></circle>
+                <path d="M6 21V9a9 9 0 0 0 9 9"></path>
+              </svg>
+            </span>
+            <span class="git-branch" id="gitBranch">main</span>
+            <span class="git-changes" id="gitChanges"></span>
+          </div>
+        </div>
+        <div class="menubar-right">
+          <button class="menu-btn" id="btnUndo" title="撤销 (Ctrl+Z)" data-i18n-title="undo">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="1 4 1 10 7 10"></polyline>
               <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
             </svg>
           </button>
-          <button class="toolbar-btn" id="btn-redo" title="重做 (Ctrl+Y)">
+          <button class="menu-btn" id="btnRedo" title="重做 (Ctrl+Y)" data-i18n-title="redo">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="23 4 23 10 17 10"></polyline>
               <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
             </svg>
           </button>
-          <span class="toolbar-separator"></span>
-          <button class="toolbar-btn" id="btn-bold" title="粗体 (Ctrl+B)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path>
-              <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path>
-            </svg>
-          </button>
-          <button class="toolbar-btn" id="btn-italic" title="斜体 (Ctrl+I)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="19" y1="4" x2="10" y2="4"></line>
-              <line x1="14" y1="20" x2="5" y2="20"></line>
-              <line x1="15" y1="4" x2="9" y2="20"></line>
-            </svg>
-          </button>
-          <button class="toolbar-btn" id="btn-strikethrough" title="删除线">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M16 4H9a3 3 0 0 0-2.83 4"></path>
-              <path d="M14 12a4 4 0 0 1 0 8H6"></path>
-              <line x1="4" y1="12" x2="20" y2="12"></line>
-            </svg>
-          </button>
-          <span class="toolbar-separator"></span>
-          <button class="toolbar-btn" id="btn-heading" title="标题">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M6 4v16"></path>
-              <path d="M18 4v16"></path>
-              <path d="M6 12h12"></path>
-            </svg>
-          </button>
-          <button class="toolbar-btn" id="btn-quote" title="引用">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21c0 1 0 1 1 1z"></path>
-              <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"></path>
-            </svg>
-          </button>
-          <button class="toolbar-btn" id="btn-code" title="代码">
+          <div class="menu-separator"></div>
+          <button class="menu-btn" id="btnViewSource" title="源码模式" data-i18n-title="sourceMode">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="16 18 22 12 16 6"></polyline>
               <polyline points="8 6 2 12 8 18"></polyline>
             </svg>
           </button>
-          <button class="toolbar-btn" id="btn-list" title="列表">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="8" y1="6" x2="21" y2="6"></line>
-              <line x1="8" y1="12" x2="21" y2="12"></line>
-              <line x1="8" y1="18" x2="21" y2="18"></line>
-              <line x1="3" y1="6" x2="3.01" y2="6"></line>
-              <line x1="3" y1="12" x2="3.01" y2="12"></line>
-              <line x1="3" y1="18" x2="3.01" y2="18"></line>
-            </svg>
-          </button>
-          <button class="toolbar-btn" id="btn-link" title="链接">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-            </svg>
-          </button>
-          <button class="toolbar-btn" id="btn-image" title="图片">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <circle cx="8.5" cy="8.5" r="1.5"></circle>
-              <polyline points="21 15 16 10 5 21"></polyline>
-            </svg>
-          </button>
-          <button class="toolbar-btn" id="btn-table" title="表格">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="3" y1="9" x2="21" y2="9"></line>
-              <line x1="3" y1="15" x2="21" y2="15"></line>
-              <line x1="9" y1="3" x2="9" y2="21"></line>
-              <line x1="15" y1="3" x2="15" y2="21"></line>
-            </svg>
-          </button>
-          <button class="toolbar-btn" id="btn-hr" title="分割线">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="2" y1="12" x2="22" y2="12"></line>
-            </svg>
-          </button>
-        </div>
-        <div class="toolbar-right">
-          <button class="toolbar-btn" id="btn-view-toggle" title="切换视图">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="12" y1="3" x2="12" y2="21"></line>
-            </svg>
-          </button>
-          <button class="toolbar-btn" id="btn-theme" title="切换主题">
+          <button class="menu-btn" id="btnTheme" title="切换主题" data-i18n-title="toggleTheme">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="5"></circle>
               <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -145,40 +132,287 @@
               <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
             </svg>
           </button>
+          <button class="menu-btn" id="btnThemeStudio" title="主题工作室" data-i18n-title="themeStudio">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 3a9 9 0 0 0 0 18h1.5a2 2 0 0 0 1.3-3.5l-.3-.3a2 2 0 0 1 1.3-3.5H17a4 4 0 0 0 0-8z"></path>
+              <circle cx="7.5" cy="10.5" r=".5"></circle>
+              <circle cx="10.5" cy="7.5" r=".5"></circle>
+              <circle cx="14.5" cy="7.5" r=".5"></circle>
+            </svg>
+          </button>
+          <button class="menu-btn" id="btnSettings" title="设置中心" data-i18n-title="settings">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82V22a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.82-.33H2a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6A1.65 1.65 0 0 0 10.33 2V2a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.35.35.66.6 1a1.65 1.65 0 0 0 1.82.33H22a2 2 0 1 1 0 4h-.09A1.65 1.65 0 0 0 19.4 15z"></path>
+            </svg>
+          </button>
+          <button class="menu-btn" id="btnToggleInspector" title="切换右侧面板" data-i18n-title="toggleInspector">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+              <path d="M15 4v16"></path>
+              <path d="m10 9-3 3 3 3"></path>
+            </svg>
+          </button>
         </div>
-      </header>
+      </nav>
 
-      <!-- Main Content -->
-      <main class="editor-container">
-        <!-- Editor Panel -->
-        <div class="editor-panel" id="editor-panel">
-          <textarea id="editor" placeholder="开始写作..." spellcheck="false"></textarea>
+      <!-- Main Layout -->
+      <main class="main-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+          <div class="sidebar-header">
+            <span class="sidebar-title" data-i18n="fileExplorer">文件资源管理器</span>
+            <button class="sidebar-btn" id="btnRefreshTree" title="刷新" data-i18n-title="refresh">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="sidebar-content" id="fileTree">
+            <div class="empty-state">
+              <p data-i18n="openFolderHint">打开文件夹以查看文件</p>
+              <button class="btn-open-folder" id="btnOpenFolderSidebar" data-i18n="openFolder">打开文件夹</button>
+            </div>
+          </div>
+          <!-- Cloud Sync Panel -->
+          <div class="sidebar-section" id="gitPanel">
+            <div class="sidebar-header">
+              <span class="sidebar-title" data-i18n="cloudSync">云同步</span>
+            </div>
+            <div class="git-panel-content" id="gitPanelContent">
+              <div class="sync-row">
+                <select class="sync-select" id="syncStrategySelect" title="同步策略" data-i18n-title="syncStrategy"></select>
+                <button class="git-btn sync-target" id="btnSyncTarget" title="选择本地镜像目录" data-i18n-title="chooseMirror" data-i18n="directory">目录</button>
+              </div>
+              <div class="git-actions">
+                <button class="git-btn" id="btnGitPull" title="拉取远程最新" data-i18n-title="pull">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <path d="M21 3L14 10"></path>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  </svg>
+                  <span data-i18n="pull">拉取</span>
+                </button>
+                <button class="git-btn" id="btnGitPush" title="推送到远程" data-i18n-title="push">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <path d="M21 3L14 10"></path>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  </svg>
+                  <span data-i18n="push">推送</span>
+                </button>
+                <button class="git-btn primary" id="btnGitCommit" title="提交更改" data-i18n-title="commitChanges">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <span data-i18n="sync">同步</span>
+                </button>
+              </div>
+              <div class="git-files" id="gitFiles">
+                <!-- Git status files will be rendered here -->
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Editor Area -->
+        <div class="editor-area">
+          <div class="editor-wrapper" id="editorWrapper">
+            <div id="editor" class="milkdown-editor"></div>
+          </div>
+          <!-- Source Mode Editor (hidden by default) -->
+          <textarea class="source-editor hidden" id="sourceEditor" spellcheck="false"></textarea>
         </div>
 
-        <!-- Divider -->
-        <div class="divider" id="divider"></div>
+        <aside class="inspector" id="inspector">
+          <div class="inspector-tabs">
+            <button class="inspector-tab active" data-inspector-tab="insight" data-i18n="overview">概览</button>
+            <button class="inspector-tab" data-inspector-tab="outline" data-i18n="outline">大纲</button>
+            <button class="inspector-tab" data-inspector-tab="backlinks" data-i18n="backlinks">双链</button>
+            <button class="inspector-tab" data-inspector-tab="graph" data-i18n="graph">图谱</button>
+            <button class="inspector-tab" data-inspector-tab="theme" data-i18n="theme">主题</button>
+          </div>
 
-        <!-- Preview Panel -->
-        <div class="preview-panel" id="preview-panel">
-          <div id="preview" class="preview-content"></div>
-        </div>
+          <section class="inspector-panel active" data-inspector-panel="insight">
+            <div class="panel-heading" data-i18n="currentVault">当前知识库</div>
+            <div class="metric-grid">
+              <div class="metric"><span id="metricNotes">0</span><label data-i18n="notes">笔记</label></div>
+              <div class="metric"><span id="metricLinks">0</span><label data-i18n="links">链接</label></div>
+              <div class="metric"><span id="metricTags">0</span><label data-i18n="tags">标签</label></div>
+            </div>
+            <div class="inspector-block">
+              <div class="inspector-title" data-i18n="commonTags">常用标签</div>
+              <div class="tag-cloud" id="tagsList"></div>
+            </div>
+          </section>
+
+          <section class="inspector-panel" data-inspector-panel="outline">
+            <div class="panel-heading" data-i18n="documentStructure">文档结构</div>
+            <div class="inspector-block">
+              <div class="outline-list" id="outlineList"></div>
+            </div>
+          </section>
+
+          <section class="inspector-panel" data-inspector-panel="backlinks">
+            <div class="panel-heading" data-i18n="connectionMap">连接关系</div>
+            <div class="inspector-block">
+              <div class="inspector-title" data-i18n="backlinksTitle">反向链接</div>
+              <div class="backlinks-list" id="backlinksList"></div>
+            </div>
+            <div class="inspector-block">
+              <div class="inspector-title" data-i18n="unresolvedLinks">未创建笔记</div>
+              <div class="backlinks-list" id="unresolvedLinksList"></div>
+            </div>
+            <div class="inspector-block">
+              <div class="inspector-title" data-i18n="localGraph">局部图谱</div>
+              <div class="graph-list" id="graphList"></div>
+            </div>
+          </section>
+
+          <section class="inspector-panel" data-inspector-panel="graph">
+            <div class="panel-heading" data-i18n="graphView">图谱视图</div>
+            <div class="graph-toolbar">
+              <input id="graphFilter" type="search" placeholder="过滤标签或标题" data-i18n-placeholder="graphFilterPlaceholder">
+              <button class="theme-apply" id="btnResetGraph" data-i18n="resetView">重置视图</button>
+            </div>
+            <canvas id="graphCanvas" class="graph-canvas" width="560" height="420"></canvas>
+          </section>
+
+          <section class="inspector-panel" data-inspector-panel="theme">
+            <div class="panel-heading" data-i18n="customTheme">自定义主题</div>
+            <div class="theme-studio">
+              <label>Accent <input id="themeAccent" type="color" value="#5b6cff"></label>
+              <label>Surface <input id="themeSurface" type="color" value="#f7f9ff"></label>
+              <label>Text <input id="themeText" type="color" value="#1d1d26"></label>
+              <label>Editor Width <input id="themeEditorWidth" type="range" min="680" max="1080" value="860"></label>
+              <div class="theme-package-actions">
+                <button class="theme-apply" id="btnImportThemePackage" data-i18n="importThemePackage">导入主题包</button>
+                <button class="theme-apply" id="btnExportThemePackage" data-i18n="exportThemePackage">导出主题包</button>
+              </div>
+              <button class="theme-apply" id="btnResetTheme" data-i18n="resetTheme">重置主题</button>
+            </div>
+            <div class="locale-studio">
+              <label>
+                <span data-i18n="language">语言</span>
+                <select id="languageSelect"></select>
+              </label>
+              <label class="locale-override-label">
+                <span data-i18n="translationOverrides">翻译覆盖 JSON</span>
+                <textarea id="localeOverrides" spellcheck="false"></textarea>
+              </label>
+              <div class="locale-actions">
+                <button class="theme-apply" id="btnSaveLocaleOverrides" data-i18n="saveOverrides">保存覆盖</button>
+                <button class="theme-apply" id="btnRestoreLocaleBuiltin" data-i18n="restoreBuiltin">还原内置翻译</button>
+              </div>
+            </div>
+            <div class="theme-market">
+              <div class="inspector-title" data-i18n="themeLibrary">主题库</div>
+              <div class="theme-library" id="themeLibrary"></div>
+            </div>
+          </section>
+        </aside>
       </main>
 
       <!-- Status Bar -->
-      <footer class="status-bar">
-        <div class="status-left">
-          <span id="status-file">未命名</span>
-          <span id="status-modified"></span>
+      <footer class="statusbar">
+        <div class="statusbar-left">
+          <span class="status-item" id="statusMode" data-i18n="editMode">编辑模式</span>
+          <span class="status-item" id="statusMessage"></span>
         </div>
-        <div class="status-center">
-          <span id="status-view">分栏视图</span>
-        </div>
-        <div class="status-right">
-          <span id="status-words">0 字</span>
-          <span id="status-lines">0 行</span>
-          <span id="status-cursor">行 1, 列 1</span>
+        <div class="statusbar-right">
+          <span class="status-item" id="statusWords">0 字</span>
+          <span class="status-item" id="statusLines" data-i18n="lineColumn">行 1, 列 1</span>
+          <span class="status-item" id="statusEncoding">UTF-8</span>
         </div>
       </footer>
+
+      <!-- Dialogs -->
+      <div class="command-palette hidden" id="commandPalette" role="dialog" aria-modal="true">
+        <div class="command-panel">
+          <input id="commandSearch" class="command-search" type="search" autocomplete="off" data-i18n-placeholder="commandSearchPlaceholder" placeholder="搜索命令、面板、同步...">
+          <div class="command-list" id="commandList"></div>
+        </div>
+      </div>
+
+      <div class="search-palette hidden" id="searchPalette" role="dialog" aria-modal="true">
+        <div class="command-panel">
+          <input id="globalSearchInput" class="command-search" type="search" autocomplete="off" data-i18n-placeholder="globalSearchPlaceholder" placeholder="搜索标题、正文、标签...">
+          <div class="search-results" id="globalSearchResults"></div>
+        </div>
+      </div>
+
+      <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-content">
+          <h1>Markdown233</h1>
+          <p data-i18n="welcomeSubtitle">打开知识库、创建笔记、同步到 Git。</p>
+          <div class="welcome-actions">
+            <button class="btn-primary" id="welcomeOpenFolder" data-i18n="openFolder">打开文件夹</button>
+            <button class="btn-cancel" id="welcomeNewFile" data-i18n="newFile">新建</button>
+          </div>
+        </div>
+      </div>
+
+      <dialog class="modal settings-modal" id="modalSettings">
+        <div class="modal-content">
+          <div class="settings-header">
+            <h3 data-i18n="settings">设置中心</h3>
+            <button class="btn-cancel" id="btnCloseSettings" data-i18n="close">关闭</button>
+          </div>
+          <div class="settings-tabs">
+            <button class="settings-tab active" data-settings-tab="general" data-i18n="general">通用</button>
+            <button class="settings-tab" data-settings-tab="shortcuts" data-i18n="shortcuts">快捷键</button>
+            <button class="settings-tab" data-settings-tab="vault" data-i18n="vault">知识库</button>
+            <button class="settings-tab" data-settings-tab="plugins" data-i18n="plugins">插件</button>
+            <button class="settings-tab" data-settings-tab="diagnostics" data-i18n="diagnostics">诊断</button>
+          </div>
+          <section class="settings-panel active" data-settings-panel="general">
+            <label><span data-i18n="language">语言</span><select id="settingsLanguageSelect"></select></label>
+            <label><span data-i18n="syncStrategy">同步策略</span><select id="settingsSyncStrategy"></select></label>
+          </section>
+          <section class="settings-panel" data-settings-panel="shortcuts">
+            <div class="shortcut-list" id="shortcutList"></div>
+            <button class="theme-apply" id="btnResetShortcuts" data-i18n="resetShortcuts">重置快捷键</button>
+          </section>
+          <section class="settings-panel" data-settings-panel="vault">
+            <div class="settings-readout" id="vaultConfigReadout"></div>
+            <button class="theme-apply" id="btnSaveVaultConfig" data-i18n="saveVaultConfig">保存知识库配置</button>
+          </section>
+          <section class="settings-panel" data-settings-panel="plugins">
+            <div class="plugin-list" id="pluginList"></div>
+            <button class="theme-apply" id="btnReloadPlugins" data-i18n="reloadPlugins">重新加载插件</button>
+          </section>
+          <section class="settings-panel" data-settings-panel="diagnostics">
+            <div class="settings-readout" id="diagnosticsPreview"></div>
+            <button class="theme-apply" id="btnExportDiagnostics" data-i18n="exportDiagnostics">导出诊断包</button>
+          </section>
+        </div>
+      </dialog>
+
+      <dialog class="modal" id="modalGitCommit">
+        <div class="modal-content">
+          <h3 data-i18n="commitChanges">提交更改</h3>
+          <textarea class="commit-message" id="commitMessage" placeholder="输入提交消息..." data-i18n-placeholder="commitPlaceholder"></textarea>
+          <div class="modal-actions">
+            <button class="btn-cancel" id="btnCancelCommit" data-i18n="cancel">取消</button>
+            <button class="btn-primary" id="btnConfirmCommit" data-i18n="commitAndSync">提交并同步</button>
+          </div>
+        </div>
+      </dialog>
+
+      <dialog class="modal" id="modalConflict">
+        <div class="modal-content">
+          <h3 data-i18n="conflictDetected">检测到冲突</h3>
+          <p class="conflict-message" id="conflictMessage"></p>
+          <div class="conflict-files" id="conflictFiles"></div>
+          <p class="conflict-hint" data-i18n="conflictHint">选择处理方式：</p>
+          <div class="modal-actions">
+            <button class="btn-cancel" id="btnCancelConflict" data-i18n="cancelKeepLocal">取消（保留本地）</button>
+            <button class="btn-danger" id="btnForcePull" data-i18n="forceRemote">使用远程版本覆盖</button>
+          </div>
+        </div>
+      </dialog>
     </div>
   </body>
 </html>

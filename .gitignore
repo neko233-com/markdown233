@@ -10,6 +10,9 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+e2e-artifacts
+release
+release-check
 *.local
 
 # Editor directories and files

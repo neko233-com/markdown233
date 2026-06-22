@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Markdown233 Docs</title>
+  <style>
+    body{margin:0;background:#fbfcff;color:#1d1d26;font:16px/1.72 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    header,main{max-width:980px;margin:auto;padding:32px}
+    nav{display:flex;gap:14px;flex-wrap:wrap}a{color:#5b6cff;text-decoration:none;font-weight:650}
+    h1{font-size:44px;line-height:1.05;margin:54px 0 16px}h2{margin-top:36px}
+    section{border-top:1px solid rgba(83,91,122,.16);padding-top:20px}
+    code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}pre{overflow:auto;background:#f2f5ff;border-radius:14px;padding:16px}
+  </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="index.html">Overview</a>
+      <a href="plugins.html">Plugin API</a>
+      <a href="themes.html">Themes</a>
+      <a href="releases.html">Release</a>
+    </nav>
+    <h1>Markdown233</h1>
+    <p>Native Markdown vault editor for Windows and macOS. Tauri 2, low bundle size, Git-first sync, command palette, settings center, graph view, plugin-ready core, and user-owned themes.</p>
+  </header>
+  <main>
+    <section>
+      <h2>One-click install</h2>
+      <pre><code>powershell -ExecutionPolicy Bypass -File install.ps1
+sh install.sh</code></pre>
+    </section>
+    <section>
+      <h2>Core surfaces</h2>
+      <p>Use <code>Ctrl/Cmd + K</code> for the command palette. Right inspector panels switch between overview, outline, backlinks, graph, and theme.</p>
+    </section>
+    <section>
+      <h2>Vault config</h2>
+      <p>Each vault can keep its own <code>.markdown233/config.json</code> for theme, sync, graph layout, shortcuts, and plugin state.</p>
+    </section>
+    <section>
+      <h2>Sync</h2>
+      <p>Default sync strategy is Git. Local mirror sync supports cloud-drive folders such as iCloud Drive, OneDrive, Dropbox, or any user-selected directory.</p>
+    </section>
+  </main>
+</body>
+</html>
